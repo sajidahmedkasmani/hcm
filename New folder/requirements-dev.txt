@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest>=8.0
+pandas>=2.0
+matplotlib>=3.8
+ruff>=0.5
+jupyter>=1.0

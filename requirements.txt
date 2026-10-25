@@ -1,0 +1,18 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+sqlalchemy>=2.0
+alembic>=1.13
+pydantic[email]>=2.7
+pyjwt>=2.8
+bcrypt>=4.1
+httpx>=0.27
+python-multipart>=0.0.9
+reportlab>=4.0
+openpyxl>=3.1             # Excel (.xlsx) employee import
+tzdata>=2024.1            # timezone data on Windows
+psycopg[binary]>=3.1      # PostgreSQL driver (DATABASE_URL=postgresql+psycopg://...)
+# Camera attendance: server-side face detection + matching (prebuilt wheels: Linux, Windows, macOS — no compiler)
+dlib-bin>=19.24
+face_recognition_models==0.1.3   # dlib's pretrained landmark + face-descriptor model files
+numpy>=1.26
+pillow>=10.0

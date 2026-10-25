@@ -1,0 +1,24 @@
+# One-click deploy on Render (free web service). Add a free PostgreSQL (Render/Neon/Supabase)
+# and paste its URL into DATABASE_URL as postgresql+psycopg://... — SQLite on free hosts is wiped on restart.
+services:
+  - type: web
+    name: hcm-lite
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # --proxy-headers: read the real client IP from Render's proxy (needed for per-IP login throttling)
+    startCommand: uvicorn hcm_lite.main:create_app --factory --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: AI_MODEL
+        value: openai/gpt-oss-120b
+      - key: APP_TIMEZONE
+        value: Asia/Karachi

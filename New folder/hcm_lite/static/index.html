@@ -1,0 +1,1184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HCM Lite</title>
+<meta name="theme-color" content="#2748F0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Onest:wght@400..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  /* Daylight palette: cool lavender-grey canvas, white surfaces, cobalt action colour, sun-yellow for the assistant */
+  --ink:#1C2033; --ink-2:#444B66; --muted:#5B6280; --paper:#ECEEF6; --surface:#FFFFFF; --line:#DADEEC; --line-2:#EFF1F8;
+  --brand:#2748F0; --brand-ink:#1B36C2; --brand-soft:#E4E9FF; --on-brand:#FFFFFF; --danger:#C4313B; --focus:#2748F0; --sun:#FFD23F;
+  /* status palette: present teal-green, late amber, absent red, leave violet. Partial days use texture, not colour alone. */
+  --present:#129B73; --late:#E8A200; --absent:#D63A44; --leave:#7B5CF0; --off:#AEB4C6; --tile-ink:#14172B; --on-solid:#FFFFFF;
+  --partial:repeating-linear-gradient(135deg,var(--present) 0 5px,color-mix(in srgb,var(--present) 38%,var(--surface)) 5px 9px);
+  --r-sm:12px; --r-md:16px; --r-lg:22px; --side-bg:#FFFFFF; --art:#2748F0;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Onest","Segoe UI",system-ui,sans-serif;
+}
+[data-theme=dark]{
+  color-scheme:dark;
+  --ink:#E9ECFA; --ink-2:#C3C9E4; --muted:#98A0C2; --paper:#0E111F; --surface:#171B2E; --line:#2A3050; --line-2:#1F2440;
+  --brand:#7088FF; --brand-ink:#A8B7FF; --brand-soft:#232C63; --on-brand:#0E111F; --danger:#FF7C85; --focus:#A8B7FF;
+  --present:#25B88C; --late:#EDB020; --absent:#EE5B64; --leave:#9A82FF; --off:#5A6285; --tile-ink:#0E111F; --on-solid:#0E111F;
+  --side-bg:#171B2E;
+}
+*{box-sizing:border-box}
+html,body{margin:0;overflow-x:hidden;background:var(--paper);color:var(--ink);font:15px/1.55 var(--body);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);line-height:1.15;margin:0;letter-spacing:-.015em}
+h1{font-size:2rem;font-weight:700} h2{font-size:1.25rem;font-weight:700} h3{font-size:1rem;font-weight:600}
+p{margin:0}
+a{color:var(--brand-ink);text-underline-offset:3px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+table .num{font-family:var(--body);font-weight:600}
+.muted{color:var(--muted)} .small{font-size:.875rem} .tiny{font-size:.8125rem}
+.hidden{display:none!important}
+.ico{width:22px;height:22px;flex:none;display:block}
+
+/* ---------- shell: floating rail + sticky header ---------- */
+.shell{display:grid;grid-template-columns:112px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:14px;margin:14px 0 14px 14px;height:calc(100vh - 28px);width:88px;background:var(--side-bg);border:1px solid var(--line);border-radius:28px;padding:12px 6px;display:flex;flex-direction:column;align-items:stretch;gap:12px;z-index:20}
+.brand{display:flex;align-items:center;justify-content:center;gap:12px;font-family:var(--display);font-weight:700;font-size:1.0625rem;letter-spacing:-.01em;padding:2px 0 4px}
+.brand .mark{width:46px;height:46px;border-radius:16px;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-size:1rem;font-weight:800;letter-spacing:0;position:relative;flex:none}
+.brand .mark::after{content:"";position:absolute;right:-3px;top:-3px;width:12px;height:12px;border-radius:50%;background:var(--sun);border:2px solid var(--side-bg)}
+.brand .bn{display:none;line-height:1.2}
+.brand small{display:block;font-family:var(--body);font-weight:400;font-size:.8125rem;color:var(--muted);letter-spacing:0}
+.nav{display:flex;flex-direction:column;gap:4px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav a,.rail-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 8px;border-radius:18px;color:var(--ink-2);text-decoration:none;font-size:.6875rem;font-weight:600;line-height:1.1;background:transparent;border:0;cursor:pointer;text-align:center;width:100%}
+.nav a span,.rail-btn span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav a:hover,.rail-btn:hover{background:var(--line-2);color:var(--ink)}
+.nav a.active{background:var(--brand);color:var(--on-brand)}
+.rail-foot{display:flex;flex-direction:column;gap:4px;padding-top:10px;border-top:1px solid var(--line)}
+#theme .i-sun{display:none} [data-theme=dark] #theme .i-moon{display:none} [data-theme=dark] #theme .i-sun{display:block}
+.main{padding:0 32px 96px 18px;min-width:0}
+.topbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0 16px;margin-bottom:6px;flex-wrap:wrap;background:color-mix(in srgb,var(--paper) 88%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.tb-left{display:flex;gap:12px;align-items:center;min-width:0}
+.topbar .sub{color:var(--muted);font-size:.875rem;margin-top:2px}
+.topbar .actions{display:flex;gap:10px;align-items:center}
+.who{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:4px 16px 4px 4px}
+.who .av{width:36px;height:36px;border-radius:50%;background:var(--sun);color:#1C2033;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:.8125rem}
+.who-t{display:flex;flex-direction:column;line-height:1.2;font-size:.875rem;min-width:0}
+.who-t b{font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who-t small{color:var(--muted);font-size:.75rem}
+.btn.menu-btn{display:none}
+
+/* ---------- controls ---------- */
+.btn{border:1.5px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:0 16px;min-height:40px;cursor:pointer;font-weight:600;font-size:.9375rem;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;text-decoration:none;color:var(--ink);transition:background-color .15s,border-color .15s}
+.btn:hover{border-color:var(--ink-2);background:var(--line-2)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.btn.primary:hover{background:var(--brand-ink);border-color:var(--brand-ink);color:#fff}
+[data-theme=dark] .btn.primary:hover{background:#8EA0FF;border-color:#8EA0FF;color:#0E111F}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.btn.danger:hover{background:color-mix(in srgb,var(--danger) 10%,var(--surface));border-color:var(--danger)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--line-2)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{min-height:32px;padding:0 12px;font-size:.8125rem;border-radius:10px}
+.btn.icon{width:44px;min-height:44px;padding:0;border-radius:50%}
+label{display:flex;flex-direction:column;gap:6px;font-size:.8125rem;color:var(--ink-2);font-weight:600}
+input,select,textarea{border:1.5px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:9px 12px;min-height:42px;font-weight:400;min-width:0;font-size:.9375rem}
+input:hover,select:hover,textarea:hover{border-color:var(--off)}
+input:focus,select:focus,textarea:focus{border-color:var(--brand);outline:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 22%,transparent)}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
+textarea{resize:vertical;min-height:84px}
+input[type=checkbox]{width:18px;height:18px;min-height:0;accent-color:var(--brand);padding:0}
+input[type=file]{padding:8px;background:var(--line-2);border-style:dashed}
+.check{flex-direction:row;align-items:center;gap:10px;font-weight:400;color:var(--ink)}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px 16px;align-items:end}
+.form .wide{grid-column:1/-1}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.filters label{font-weight:600}
+
+/* ---------- surfaces ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 24px}
+.panel + .panel{margin-top:18px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}
+.grid3{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-top:18px}
+.grid2 .panel + .panel,.grid3 .panel + .panel{margin-top:0}
+.stack{display:flex;flex-direction:column;gap:18px}
+.empty{padding:32px 12px;text-align:center;color:var(--muted)}
+tbody > tr > td.empty{padding:32px 12px}
+
+/* KPI band: colour-keyed blocks, one per metric */
+.band{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.band > div{--tone:var(--ink-2);background:color-mix(in srgb,var(--tone) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--tone) 22%,var(--line));border-radius:var(--r-lg);padding:16px 18px 14px}
+.band .num{font-size:2.5rem;font-weight:700;line-height:1.05;display:block;letter-spacing:-.025em}
+.band .lbl{font-size:.875rem;color:var(--ink-2);font-weight:600;display:flex;align-items:center;gap:8px;margin-top:6px}
+.band .lbl::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--tone);flex:none}
+.band .hint{font-size:.75rem;color:var(--muted);display:block;margin-top:2px}
+
+/* Today mosaic: the one bold element on the dashboard */
+.mosaic{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:7px}
+.tile{aspect-ratio:1;border-radius:15px;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:.8125rem;color:var(--on-solid);cursor:default;position:relative}
+.tile[data-s=present]{background:var(--present);color:var(--tile-ink)} .tile[data-s=late]{background:var(--late);color:var(--tile-ink)}
+.tile[data-s=half_day],.tile[data-s=missing_checkout]{background:var(--partial);color:var(--tile-ink)}
+.tile[data-s=absent]{background:var(--absent)} .tile[data-s=on_leave]{background:var(--leave)}
+.tile[data-s=not_checked_in],.tile[data-s=upcoming]{background:transparent;color:var(--muted);border:2px dashed var(--off)}
+.tile[data-s=holiday],.tile[data-s=weekend]{background:var(--off);color:var(--tile-ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:14px;font-size:.8125rem;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:13px;height:13px;border-radius:5px;display:inline-block}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+
+/* status pill */
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:.8125rem;padding:3px 11px 3px 9px;border-radius:99px;background:var(--line-2);color:var(--ink);font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--off)}
+.pill[data-s=present],.pill[data-s=approved],.pill[data-s=finalized],.pill[data-s=active]{background:color-mix(in srgb,var(--present) 14%,var(--surface))}
+.pill[data-s=present]::before,.pill[data-s=approved]::before,.pill[data-s=finalized]::before,.pill[data-s=active]::before{background:var(--present)}
+.pill[data-s=late],.pill[data-s=pending],.pill[data-s=draft],.pill[data-s=probation]{background:color-mix(in srgb,var(--late) 16%,var(--surface))}
+.pill[data-s=late]::before,.pill[data-s=pending]::before,.pill[data-s=draft]::before,.pill[data-s=probation]::before{background:var(--late)}
+.pill[data-s=half_day]::before,.pill[data-s=missing_checkout]::before{background:transparent;box-shadow:inset 0 0 0 2px var(--present)}
+.pill[data-s=absent],.pill[data-s=rejected],.pill[data-s=exited]{background:color-mix(in srgb,var(--absent) 13%,var(--surface))}
+.pill[data-s=absent]::before,.pill[data-s=rejected]::before,.pill[data-s=exited]::before{background:var(--absent)}
+.pill[data-s=on_leave]{background:color-mix(in srgb,var(--leave) 14%,var(--surface))}
+.pill[data-s=on_leave]::before{background:var(--leave)}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;margin:0 -6px;padding:0 6px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:.9375rem}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:.8125rem;padding:8px 12px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+td{padding:12px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--line-2)}
+tr.click td:first-child{border-radius:12px 0 0 12px} tr.click td:last-child{border-radius:0 12px 12px 0}
+td.r,th.r{text-align:right}
+.pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:14px}
+
+/* charts */
+.hbars{display:flex;flex-direction:column;gap:12px}
+.hbar{display:grid;grid-template-columns:minmax(90px,140px) 1fr minmax(48px,max-content);gap:12px;align-items:center;font-size:.875rem}
+.hbar > span:last-child{white-space:nowrap;text-align:right;font-weight:600}
+.hbar .track{height:14px;background:var(--line-2);border-radius:99px;overflow:hidden}
+.hbar .fill{height:100%;border-radius:99px}
+.cols svg{width:100%;height:190px;display:block}
+.cols text{fill:var(--muted);font-size:10px;font-family:var(--body)}
+
+/* employee home: the punch button is the hero */
+.clock{display:flex;gap:30px;align-items:center;flex-wrap:wrap}
+.punch{width:180px;height:180px;border-radius:50%;border:0;cursor:pointer;background:var(--brand);color:var(--on-brand);font-family:var(--display);font-size:1.4rem;font-weight:700;letter-spacing:-.01em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 0 0 10px var(--brand-soft),0 0 0 11px color-mix(in srgb,var(--brand) 30%,transparent);flex:none}
+.punch:not(.out):not(:disabled){animation:ring 2.4s ease-out 3}
+@keyframes ring{0%{box-shadow:0 0 0 10px var(--brand-soft),0 0 0 11px color-mix(in srgb,var(--brand) 30%,transparent)}60%{box-shadow:0 0 0 22px transparent,0 0 0 11px color-mix(in srgb,var(--brand) 30%,transparent)}100%{box-shadow:0 0 0 10px var(--brand-soft),0 0 0 11px color-mix(in srgb,var(--brand) 30%,transparent)}}
+.punch.out{background:var(--ink);color:var(--surface);box-shadow:0 0 0 10px var(--line-2),0 0 0 11px var(--line)}
+.punch:disabled{background:var(--line-2);color:var(--muted);box-shadow:0 0 0 10px var(--paper),0 0 0 11px var(--line);cursor:default}
+.punch small{font-family:var(--body);font-weight:500;font-size:.8125rem;opacity:.85}
+.meter{height:12px;background:var(--line-2);border-radius:99px;overflow:hidden;margin:8px 0 4px}
+.meter > div{height:100%;background:var(--brand);border-radius:99px}
+.balances{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.bal{background:var(--line-2);border-radius:var(--r-md);padding:14px 16px}
+.bal .num{font-size:2.125rem;font-weight:700;line-height:1.1;display:block}
+
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.cal .dow{font-size:.8125rem;color:var(--muted);text-align:center;font-weight:600;padding-bottom:2px}
+.cal .day{background:var(--line-2);border:0;border-left:4px solid var(--off);border-radius:14px;min-height:68px;padding:7px 8px;font-size:.75rem;display:flex;flex-direction:column;gap:2px}
+.cal .day b{font-family:var(--display);font-size:.9375rem}
+.cal .day[data-s=present]{border-left-color:var(--present);background:color-mix(in srgb,var(--present) 11%,var(--surface))}
+.cal .day[data-s=late]{border-left-color:var(--late);background:color-mix(in srgb,var(--late) 13%,var(--surface))}
+.cal .day[data-s=half_day],.cal .day[data-s=missing_checkout]{border-left-color:var(--present);border-left-style:dashed;background:color-mix(in srgb,var(--present) 7%,var(--surface))}
+.cal .day[data-s=absent]{border-left-color:var(--absent);background:color-mix(in srgb,var(--absent) 11%,var(--surface))}
+.cal .day[data-s=on_leave]{border-left-color:var(--leave);background:color-mix(in srgb,var(--leave) 12%,var(--surface))}
+.cal .day[data-s=weekend],.cal .day[data-s=holiday]{background:transparent;border:1.5px dashed var(--line);border-left:4px solid var(--line);color:var(--muted)}
+
+/* smart leave + AI marks */
+.smart{display:flex;gap:10px}
+.smart input{flex:1}
+.ai-tag{display:inline-block;font-size:.75rem;color:var(--ink);background:color-mix(in srgb,var(--sun) 45%,var(--surface));border-radius:99px;padding:2px 10px;font-weight:600}
+
+/* assistant: floating panel */
+.drawer{position:fixed;top:14px;right:14px;bottom:14px;width:min(420px,calc(100vw - 28px));background:var(--surface);border:1px solid var(--line);border-radius:28px;display:flex;flex-direction:column;transform:translateX(calc(100% + 24px));visibility:hidden;transition:transform .24s cubic-bezier(.2,.8,.2,1),visibility 0s linear .24s;z-index:30;box-shadow:0 30px 80px rgba(20,24,60,.28);overflow:hidden}
+.drawer.open{transform:none;visibility:visible;transition:transform .24s cubic-bezier(.2,.8,.2,1)}
+.drawer header{padding:16px 16px 14px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ai-head{display:flex;align-items:center;gap:12px}
+.ai-head .tiny{display:block;line-height:1.35;margin-top:2px}
+.spark{width:40px;height:40px;border-radius:14px;background:var(--sun);color:#1C2033;display:grid;place-items:center;flex:none}
+.spark .ico{width:22px;height:22px}
+.msgs{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:88%;padding:11px 14px;border-radius:20px;font-size:.9375rem;white-space:pre-wrap}
+.msg.user{align-self:flex-end;background:var(--brand);color:var(--on-brand);border-bottom-right-radius:6px}
+.msg.bot{align-self:flex-start;background:var(--line-2);border-bottom-left-radius:6px}
+.msg .meta{display:block;margin-top:8px;font-size:.75rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 20px 12px}
+.chip{border:1.5px solid var(--line);background:transparent;border-radius:99px;padding:5px 12px;font-size:.8125rem;cursor:pointer;color:var(--ink-2);font-weight:500;text-align:left}
+.chip:hover{border-color:var(--brand);color:var(--brand-ink);background:var(--brand-soft)}
+.composer{display:flex;gap:8px;padding:14px 16px 16px;border-top:1px solid var(--line)}
+.composer input{flex:1;border-radius:99px;padding-left:16px}
+.composer .btn{border-radius:99px}
+.fab{position:fixed;right:24px;bottom:24px;z-index:20;border-radius:99px;padding:0 20px 0 16px;min-height:50px;background:var(--sun);border-color:var(--sun);color:#1C2033;box-shadow:0 10px 28px rgba(20,24,60,.22)}
+.fab:hover{background:#FFDD66;border-color:#FFDD66;color:#1C2033}
+.fab .ico{width:20px;height:20px}
+.attention{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.attention h3{font-size:.875rem;margin-bottom:4px}
+.attention p{font-size:.875rem;color:var(--ink-2)}
+@media (max-width:640px){.attention{grid-template-columns:1fr}}
+
+/* auth screens */
+.auth{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:14px;padding:14px}
+.auth-form{order:1;display:flex;align-items:center;justify-content:center;padding:32px}
+.auth-form form{width:min(400px,100%);display:flex;flex-direction:column;gap:16px}
+.auth-form h1{font-size:2.125rem}
+.auth-form .btn.primary{min-height:48px;font-size:1rem;margin-top:4px}
+.auth-art{order:2;background:var(--art);color:#fff;border-radius:32px;padding:44px;display:flex;flex-direction:column;justify-content:space-between;gap:32px;overflow:hidden}
+.auth-art .brand{justify-content:flex-start}
+.auth-art .brand .bn{display:block;font-size:1.25rem}
+.auth-art .brand small{color:rgba(255,255,255,.75);max-width:34ch}
+.auth-art .brand .mark{background:#fff;color:var(--art)}
+.auth-art .brand .mark::after{border-color:var(--art)}
+.auth-art h1{font-size:clamp(2.5rem,4.6vw,4.25rem);line-height:1;letter-spacing:-.035em;font-weight:800;max-width:11ch}
+.auth-art .art-copy p{color:rgba(255,255,255,.82);margin-top:18px;max-width:42ch;font-size:1.0625rem}
+.auth-art .mini{display:grid;grid-template-columns:repeat(12,1fr);gap:7px;max-width:520px}
+.auth-art .mini i{aspect-ratio:1;border-radius:9px;display:block;animation:pop .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 16ms + 150ms)}
+@keyframes pop{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
+
+/* misc */
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:12px 20px;border-radius:99px;z-index:50;font-size:.9375rem;font-weight:500;max-width:min(560px,92vw);box-shadow:0 12px 32px rgba(20,24,60,.28)}
+.toast.err{background:var(--danger);color:#fff}
+.modal-bg{position:fixed;inset:0;background:rgba(18,22,48,.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:40;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:28px;width:min(780px,100%);max-height:90vh;overflow-y:auto;padding:26px 28px;animation:rise .2s cubic-bezier(.2,.8,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:16px;margin-bottom:18px;flex-wrap:wrap;max-width:100%}
+.tabs button{border:0;background:transparent;padding:8px 16px;cursor:pointer;font-weight:600;color:var(--muted);border-radius:12px;font-size:.9375rem}
+.tabs button:hover{color:var(--ink);background:var(--line-2)}
+.tabs button.on{color:var(--brand-ink);background:var(--brand-soft)}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:8px 20px;font-size:.9375rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.bulk{margin-top:14px;border:1.5px dashed var(--line);border-radius:var(--r-md);padding:10px 14px}
+.bulk summary{cursor:pointer;font-weight:600;font-size:.875rem;color:var(--brand-ink)}
+.bulk form{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.bulk textarea{min-height:120px;font-size:.875rem}
+.bulk .row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.notice{background:var(--brand-soft);border-radius:var(--r-md);padding:14px 16px;font-size:.9375rem}
+.warn{background:color-mix(in srgb,var(--late) 16%,var(--surface));border-radius:var(--r-md);padding:12px 16px;font-size:.875rem}
+pre.json{font-size:.75rem;background:var(--line-2);padding:10px;border-radius:10px;overflow-x:auto;max-width:420px;margin:0}
+details summary{cursor:pointer}
+.bell{position:relative}
+.bell .badge{position:absolute;top:-4px;right:-4px;background:var(--absent);color:#fff;border-radius:99px;font-size:.6875rem;min-width:20px;height:20px;display:grid;place-items:center;padding:0 5px;font-weight:700;border:2px solid var(--paper)}
+.dropdown{position:absolute;right:0;top:54px;width:350px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 60px rgba(20,24,60,.22);z-index:25;max-height:440px;overflow-y:auto}
+.dropdown .item{padding:12px 18px;border-bottom:1px solid var(--line-2);font-size:.875rem}
+.dropdown .item:last-child{border-bottom:0}
+.dropdown .item.unread{background:var(--brand-soft)}
+
+@media (max-width:1100px){
+  .main{padding-right:20px}
+}
+@media (max-width:980px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .auth{grid-template-columns:1fr;padding:10px}
+  .auth-form{order:2;padding:20px 10px 32px}
+  .auth-art{order:1;padding:24px;gap:16px;border-radius:26px}
+  .auth-art .mini,.auth-art .art-copy p{display:none}
+  .auth-art h1{font-size:2.125rem;max-width:none}
+}
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .side{position:fixed;top:10px;left:10px;bottom:10px;height:auto;margin:0;width:276px;transform:translateX(calc(-100% - 20px));visibility:hidden;transition:transform .22s cubic-bezier(.2,.8,.2,1),visibility 0s linear .22s;padding:16px 12px;z-index:35}
+  .side.open{transform:none;visibility:visible;transition:transform .22s cubic-bezier(.2,.8,.2,1);box-shadow:0 30px 80px rgba(20,24,60,.3)}
+  .clock{justify-content:center}
+  .brand{justify-content:flex-start;padding:2px 6px 8px}
+  .brand .bn{display:block}
+  .nav a,.rail-btn{flex-direction:row;gap:14px;padding:11px 14px;font-size:.9375rem;text-align:left;border-radius:16px}
+  .nav a span,.rail-btn span{overflow:visible}
+  .btn.menu-btn{display:inline-flex;width:44px;padding:0;border-radius:50%;min-height:44px}
+  .main{padding:0 16px 100px}
+  .topbar{padding:14px 0 12px}
+  h1{font-size:1.5rem}
+  .cal .day span{display:none} .cal .day{min-height:46px;padding:5px 6px}
+  .band .num{font-size:2rem}
+  .who-t{display:none} .who{padding:4px}
+  .topbar .sub{display:none}
+  .modal{padding:20px 18px;border-radius:24px}
+  .panel{padding:18px 18px;border-radius:20px}
+  .fab{right:16px;bottom:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ============================================================== utilities */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+class Raw { constructor(v) { this.v = v; } toString() { return this.v; } }
+const raw = (v) => new Raw(v);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+/** Tagged template that escapes every interpolation unless it is Raw (XSS-safe rendering). */
+function html(strings, ...vals) {
+  const part = (v) => v instanceof Raw ? v.v : Array.isArray(v) ? v.map(part).join("") : (v === false || v == null) ? "" : esc(v);
+  return raw(strings.reduce((acc, s, i) => acc + s + (i < vals.length ? part(vals[i]) : ""), ""));
+}
+const money = (v) => "PKR " + Number(v || 0).toLocaleString("en-PK", { maximumFractionDigits: 0 });
+const pct = (v) => (v ?? 0).toFixed(1).replace(/\.0$/, "") + "%";
+const initials = (name) => name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+const LABEL = { present: "Present", late: "Late", half_day: "Half day", absent: "Absent", on_leave: "On leave",
+  missing_checkout: "Missing check-out", not_checked_in: "Not checked in", holiday: "Holiday", weekend: "Weekend",
+  upcoming: "Upcoming", not_employed: "—", not_tracked: "Before go-live", pending: "Pending", approved: "Approved", rejected: "Rejected",
+  cancelled: "Cancelled", draft: "Draft", finalized: "Finalized", active: "Active", probation: "Probation", exited: "Exited" };
+const pill = (s) => html`<span class="pill" data-s="${s}">${LABEL[s] || s}</span>`;
+const fmtDate = (iso) => iso ? new Date(iso + (iso.length === 10 ? "T00:00:00" : "")).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—";
+const fmtDT = (iso) => iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+const monthNow = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+
+let toastTimer;
+function toast(msg, isErr = false) {
+  const t = $("#toast");
+  t.textContent = msg; t.className = "toast" + (isErr ? " err" : "");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add("hidden"), isErr ? 5200 : 3200);
+}
+
+/* ============================================================== API client */
+const S = { token: localStorage.getItem("hcm_token"), user: null, company: null, ai: [], openAI: false };
+class ApiError extends Error { constructor(status, body) { super(body?.message || `Request failed (${status})`); this.status = status; this.body = body; } }
+async function api(method, path, body, opts = {}) {
+  const headers = {};
+  if (S.token) headers.Authorization = "Bearer " + S.token;
+  let payload = body;
+  if (body && !(body instanceof FormData)) { headers["Content-Type"] = "application/json"; payload = JSON.stringify(body); }
+  const res = await fetch(path, { method, headers, body: payload });
+  if (opts.blob) { if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => ({}))); return res.blob(); }
+  const data = res.status === 204 ? null : await res.json().catch(() => null);
+  if (!res.ok) {
+    if (res.status === 401 && path !== "/api/auth/login") { logout(true); }
+    if (res.status === 403 && data?.error === "password_change_required") { location.hash = "#/password"; }
+    let msg = data?.message || data?.detail;
+    if (Array.isArray(msg)) msg = msg.map((d) => `${(d.loc || []).slice(-1)[0]}: ${d.msg}`).join("; ");
+    throw new ApiError(res.status, { ...(data || {}), message: msg || `Request failed (${res.status})` });
+  }
+  return data;
+}
+/** Run an action with a busy button and error toast. */
+async function act(btn, fn, okMsg) {
+  if (btn) btn.disabled = true;
+  try { const r = await fn(); if (okMsg) toast(okMsg); return r; }
+  catch (e) { toast(e.message, true); throw e; }
+  finally { if (btn) btn.disabled = false; }
+}
+/** Split pasted text or a file into names: one per line (a column copied from Excel), or comma-separated on
+ *  one line. From a CSV file only the first column is used. Quotes and surrounding spaces are removed. */
+function parseList(text, firstCsvColumn = false) {
+  const lines = /\r?\n/.test(text.trim()) ? text.split(/\r?\n/) : text.split(/[,;]/);
+  return lines.map((line) => {
+    let cell = line.split("\t")[0];
+    if (firstCsvColumn) cell = (cell.match(/^\s*"((?:[^"]|"")*)"/)?.[1]?.replace(/""/g, '"')) ?? cell.split(",")[0];
+    return cell.replace(/^["']|["']$/g, "").trim();
+  }).filter(Boolean).filter((name, i) => !(i === 0 && /^(names?|departments?|designations?|titles?)$/i.test(name)));  // header row
+}
+// act() re-throws so callers stop; the error was already shown as a toast, so don't log it twice
+window.addEventListener("unhandledrejection", (e) => { if (e.reason instanceof ApiError) e.preventDefault(); });
+const formData = (form) => Object.fromEntries([...new FormData(form).entries()].map(([k, v]) => [k, typeof v === "string" ? v.trim() : v]));
+const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== "" && v != null));
+async function download(path, filename) {
+  const blob = await api("GET", path, null, { blob: true });
+  const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+/* ============================================================== session & routing */
+async function logout(expired = false, { everywhere = false } = {}) {
+  if (!expired && S.token) {  // revoke the token on the server, not just in this browser
+    try { await api("POST", "/api/auth/logout" + (everywhere ? "?everywhere=true" : "")); } catch (_) {}
+  }
+  localStorage.removeItem("hcm_token"); S.token = null; S.user = null; S.ai = [];
+  if (expired) toast("Your session ended. Please sign in again.", true);
+  location.hash = "#/login"; render();
+}
+const role = () => S.user?.role;
+const hasProfile = () => !!S.user?.employee_id;
+const MENUS = {
+  admin: [["dashboard", "Dashboard"], ["employees", "Employees"], ["attendance", "Attendance"], ["leave", "Leave"],
+    ["payroll", "Payroll"], ["organization", "Organization"], ["users", "Logins"], ["announcements", "Announcements"], ["audit", "Audit log"]],
+  hr: [["dashboard", "Dashboard"], ["home", "My day"], ["employees", "Employees"], ["attendance", "Attendance"],
+    ["leave", "Leave"], ["payroll", "Payroll"], ["payslips", "Payslips"], ["announcements", "Announcements"], ["profile", "Profile"]],
+  employee: [["home", "Home"], ["attendance", "Attendance"], ["leave", "Leave"], ["payslips", "Payslips"],
+    ["announcements", "Announcements"], ["profile", "Profile"]],
+};
+const defaultRoute = () => role() === "employee" ? "home" : "dashboard";
+
+window.addEventListener("hashchange", render);
+async function render() {
+  const route = (location.hash.replace(/^#\/?/, "") || "").split("?")[0];
+  const app = $("#app");
+  try {
+    const status = await api("GET", "/api/setup/status");
+    if (!status.initialized) return renderSetup(app);
+    if (!S.token) return renderLogin(app);
+    if (!S.user) {
+      S.user = await api("GET", "/api/auth/me");
+      S.company = S.user.company;
+    }
+    if (S.user.must_change_password || route === "password") return renderPassword(app);
+    const allowed = MENUS[role()].map((m) => m[0]);
+    const page = allowed.includes(route) ? route : defaultRoute();
+    if (page !== route) { history.replaceState(null, "", "#/" + page); }
+    renderShell(app, page);
+    await PAGES[page]($("#page"));
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) return;
+    console.error(e);
+    const page = $("#page");
+    if (page) page.innerHTML = html`<div class="panel empty">Couldn't load this page: ${e.message}. <button class="btn sm" onclick="render()">Try again</button></div>`;
+    else app.innerHTML = html`<div class="auth-form"><p>Couldn't reach the server: ${e.message}</p></div>`;
+  }
+}
+
+/* ============================================================== auth screens */
+function authArt() {
+  const cols = ["present", "present", "late", "present", "leave", "present", "present", "absent", "present", "partial", "off", "present"];
+  const tiles = Array.from({ length: 48 }, (_, i) => `<i style="--i:${i};background:var(--${cols[(i * 7 + Math.floor(i / 12) * 5 + 3) % cols.length]})"></i>`).join("");
+  return html`<div class="auth-art">
+    <div class="brand"><span class="mark">HC</span><span class="bn">HCM Lite<small>People operations, with an assistant that answers from your own records</small></span></div>
+    <div class="art-copy"><h1>Who’s in, who’s off, who’s paid.</h1><p>Admin sets up the company, HR registers people, and every number on the dashboards comes from what happens in the app.</p></div>
+    <div class="mini" aria-hidden="true">${raw(tiles)}</div></div>`;
+}
+function renderSetup(app) {
+  app.innerHTML = html`<div class="auth">${authArt()}<div class="auth-form"><form id="f">
+    <h1>Set up your company</h1><p class="muted">This creates the company profile and the Admin account. It runs once on a fresh install.</p>
+    <label>Company name<input name="company_name" required minlength="2" autocomplete="organization"></label>
+    <label>Your name<input name="admin_name" value="Administrator" required></label>
+    <label>Admin email<input name="admin_email" type="email" required autocomplete="email"></label>
+    <label>Admin password<input name="admin_password" type="password" required minlength="8" autocomplete="new-password"><span class="tiny muted">At least 8 characters with a letter and a digit.</span></label>
+    <label class="check"><input type="checkbox" name="std" checked> Add standard leave types (annual 14, sick 8, casual 10, unpaid)</label>
+    <button class="btn primary" type="submit">Create company</button></form></div></div>`;
+  $("#f").onsubmit = async (ev) => {
+    ev.preventDefault(); const d = formData(ev.target);
+    await act(ev.submitter, () => api("POST", "/api/setup", { company_name: d.company_name, admin_name: d.admin_name, admin_email: d.admin_email, admin_password: d.admin_password, create_standard_leave_types: !!d.std }), "Company created. Sign in as Admin.");
+    location.hash = "#/login"; render();
+  };
+}
+function renderLogin(app) {
+  app.innerHTML = html`<div class="auth">${authArt()}<div class="auth-form"><form id="f">
+    <h1>Sign in</h1><p class="muted">Use the email your Admin or HR registered for you.</p>
+    <label>Email<input name="email" type="email" required autocomplete="username"></label>
+    <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+    <button class="btn primary" type="submit">Sign in</button></form></div></div>`;
+  $("#f").onsubmit = async (ev) => {
+    ev.preventDefault(); const d = formData(ev.target);
+    const r = await act(ev.submitter, () => api("POST", "/api/auth/login", d));
+    S.token = r.access_token; localStorage.setItem("hcm_token", S.token); S.user = null;
+    location.hash = r.must_change_password ? "#/password" : "#/"; render();
+  };
+}
+function renderPassword(app) {
+  const forced = S.user?.must_change_password;
+  app.innerHTML = html`<div class="auth">${authArt()}<div class="auth-form"><form id="f">
+    <h1>${forced ? "Choose your own password" : "Change password"}</h1>
+    <p class="muted">${forced ? "You signed in with a temporary password. Set a new one to continue." : "Your other sessions will be signed out."}</p>
+    <label>Current password<input name="current_password" type="password" required autocomplete="current-password"></label>
+    <label>New password<input name="new_password" type="password" required minlength="8" autocomplete="new-password"><span class="tiny muted">At least 8 characters with a letter and a digit.</span></label>
+    <button class="btn primary" type="submit">Save password</button>
+    ${forced ? "" : raw('<a href="#/">Back</a>')}</form></div></div>`;
+  $("#f").onsubmit = async (ev) => {
+    ev.preventDefault();
+    const r = await act(ev.submitter, () => api("POST", "/api/auth/change-password", formData(ev.target)), "Password saved");
+    S.token = r.access_token; localStorage.setItem("hcm_token", S.token); S.user = null;
+    location.hash = "#/"; render();
+  };
+}
+
+/* ============================================================== shell */
+const ICON = {
+  dashboard: '<rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>',
+  home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/>',
+  employees: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17.5 14.6c2.4.3 3.7 2 4 4.4"/>',
+  attendance: '<rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/>',
+  leave: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>',
+  payroll: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="3.5" y="8" width="17" height="12" rx="3.5"/><circle cx="16.5" cy="14" r="1.2"/>',
+  payslips: '<path d="M6 3.5h12v17l-3-2-3 2-3-2-3 2z"/><path d="M9 8.5h6M9 12.5h6"/>',
+  organization: '<rect x="4.5" y="3.5" width="10" height="17" rx="2.5"/><path d="M14.5 9.5h3a2 2 0 0 1 2 2v9h-5"/><path d="M8 8h3M8 12h3M8 16h3"/>',
+  users: '<circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M15.5 7.5l2.5 2.5M13 10l2 2"/>',
+  announcements: '<path d="M4 10v4a1 1 0 0 0 1 1h2.5l7 4V5l-7 4H5a1 1 0 0 0-1 1z"/><path d="M18.5 9a4 4 0 0 1 0 6"/>',
+  audit: '<path d="M12 3 5 6v5.5c0 4.4 2.9 7.8 7 9.5 4.1-1.7 7-5.1 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
+  profile: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.7-4 3.5-6 7.5-6s6.8 2 7.5 6"/>',
+  bell: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21h4"/>',
+  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  logout: '<path d="M14 4.5h4.5A1.5 1.5 0 0 1 20 6v12a1.5 1.5 0 0 1-1.5 1.5H14"/><path d="m9.5 8-4 4 4 4M5.5 12H16"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  sparkle: '<path d="M11 3.5l1.8 5.2 5.2 1.8-5.2 1.8L11 17.5l-1.8-5.2L4 10.5l5.2-1.8z"/><path d="M19 16v4M17 18h4"/>',
+};
+ICON.sun = ICON.leave;
+const ico = (k, cls = "") => raw(`<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON[k] || ""}</svg>`);
+const NAV_SHORT = { announcements: "Notices", organization: "Company" };  // short names fit the slim rail; the page title keeps the full name
+
+function renderShell(app, page) {
+  const u = S.user;
+  if (!$(".shell", app) || app.dataset.role !== u.role) {
+    app.dataset.role = u.role;
+    const co = S.company?.name || "HCM Lite";
+    const roleName = u.role === "hr" ? "HR" : u.role[0].toUpperCase() + u.role.slice(1);
+    app.innerHTML = html`<div class="shell">
+      <aside class="side" id="side">
+        <div class="brand" title="${co}"><span class="mark">${initials(co)}</span><span class="bn">${co}<small>HCM Lite</small></span></div>
+        <nav class="nav" id="nav" aria-label="Main"></nav>
+        <div class="rail-foot">
+          <button class="rail-btn" id="theme" type="button">${ico("moon", "i-moon")}${ico("sun", "i-sun")}<span class="lbl-t">Dark</span></button>
+          <button class="rail-btn" id="out" type="button">${ico("logout")}<span>Sign out</span></button>
+        </div>
+      </aside>
+      <main class="main"><header class="topbar">
+        <div class="tb-left"><button class="btn menu-btn" id="menu" aria-label="Open menu">${ico("menu")}</button><div><h1 id="title"></h1><p class="sub" id="sub"></p></div></div>
+        <div class="actions">
+          <div class="bell"><button class="btn icon" id="bell" aria-label="Notifications">${ico("bell")}</button><span class="badge hidden" id="badge"></span><div class="dropdown hidden" id="notes"></div></div>
+          <div class="who"><span class="av" aria-hidden="true">${initials(u.full_name)}</span><span class="who-t"><b>${u.full_name}</b><small>${roleName}</small></span></div>
+        </div></header>
+        <div id="page"></div></main></div>
+      <button class="btn fab" id="fab">${ico("sparkle")}Ask the assistant</button>
+      <aside class="drawer" id="drawer" aria-label="Assistant"><header><div class="ai-head"><span class="spark">${ico("sparkle")}</span><div><h2>Assistant</h2><span class="tiny muted">Answers from live HR data within your access</span></div></div><button class="btn ghost sm" id="close-ai" aria-label="Close assistant">Close</button></header>
+        <div class="msgs" id="msgs"></div><div class="chips" id="chips"></div>
+        <form class="composer" id="composer"><input name="q" placeholder="Ask about attendance, leave, payroll or policy" autocomplete="off" maxlength="1000" aria-label="Message"><button class="btn primary">Send</button></form></aside>`;
+    $("#out").onclick = () => logout();
+    $("#theme").onclick = toggleTheme;
+    $("#menu").onclick = () => $("#side").classList.toggle("open");
+    $("#fab").onclick = () => openAI(true);
+    $("#close-ai").onclick = () => openAI(false);
+    $("#composer").onsubmit = (ev) => { ev.preventDefault(); const q = ev.target.q.value.trim(); if (q) { ev.target.q.value = ""; askAI(q); } };
+    $("#bell").onclick = toggleNotes;
+    setupAI();
+    refreshBadge();
+    syncThemeLabel();
+    document.addEventListener("click", (e) => { if (!e.target.closest("#side, #menu")) $("#side")?.classList.remove("open"); });  // tap outside closes the mobile menu
+  }
+  $("#nav").innerHTML = MENUS[u.role].map(([k, label]) => html`<a href="#/${k}" class="${k === page ? "active" : ""}" title="${label}" ${raw(k === page ? 'aria-current="page"' : "")}>${ico(k)}<span>${NAV_SHORT[k] || label}</span></a>`.v).join("");
+  $("#title").textContent = MENUS[u.role].find((m) => m[0] === page)?.[1] || "";
+  $("#sub").textContent = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  $("#side").classList.remove("open");
+  $("#page").innerHTML = '<div class="panel empty">Loading…</div>';
+}
+function toggleTheme() {
+  const dark = document.documentElement.dataset.theme !== "dark";
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  try { localStorage.setItem("hcm_theme", dark ? "dark" : "light"); } catch (_) {}
+  syncThemeLabel();
+}
+function syncThemeLabel() {
+  const b = $("#theme"); if (!b) return;
+  const dark = document.documentElement.dataset.theme === "dark";
+  $(".lbl-t", b).textContent = dark ? "Light" : "Dark";
+  b.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+  b.title = dark ? "Switch to light mode" : "Switch to dark mode";
+}
+try { if (localStorage.getItem("hcm_theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (_) {}
+
+async function refreshBadge() {
+  try { const n = await api("GET", "/api/notifications?unread_only=true"); const b = $("#badge"); if (!b) return; b.textContent = n.unread; b.classList.toggle("hidden", !n.unread); } catch (_) {}
+}
+async function toggleNotes() {
+  const box = $("#notes");
+  if (!box.classList.contains("hidden")) return box.classList.add("hidden");
+  const n = await api("GET", "/api/notifications");
+  box.innerHTML = html`<div class="item" style="display:flex;justify-content:space-between"><b>Notifications</b>${n.unread ? html`<button class="btn sm" id="readall">Mark all read</button>` : ""}</div>
+    ${n.items.length ? n.items.map((x) => html`<div class="item ${x.is_read ? "" : "unread"}"><b>${x.title}</b><p>${x.body}</p><span class="tiny muted">${fmtDT(x.created_at)}</span></div>`) : html`<div class="item muted">You're all caught up.</div>`}`;
+  box.classList.remove("hidden");
+  const ra = $("#readall"); if (ra) ra.onclick = async () => { await api("POST", "/api/notifications/read-all"); box.classList.add("hidden"); refreshBadge(); };
+}
+
+/* ============================================================== assistant */
+const SUGGEST = {
+  admin: ["How many employees are in Engineering?", "What is this month's attendance rate?", "Payroll summary for this month", "Which department has the most absences?"],
+  hr: ["Who is on leave today?", "Who came late most often this month?", "What is this month's attendance rate?", "Show pending leave requests"],
+  employee: ["How many sick leaves do I have left this year?", "How many times was I late this month?", "What is my salary?", "What happens if I come late?"],
+};
+function setupAI() {
+  $("#chips").innerHTML = SUGGEST[role()].map((q) => html`<button class="chip" type="button">${q}</button>`.v).join("");
+  $$("#chips .chip").forEach((c) => c.onclick = () => askAI(c.textContent));
+  if (!S.ai.length) S.ai.push({ role: "assistant", content: `Hi ${S.user.full_name.split(" ")[0]}. Ask me about attendance, leave, payroll or company policy — I only use data you're allowed to see.`, meta: "" });
+  drawMsgs();
+}
+function openAI(open) { $("#drawer").classList.toggle("open", open); if (open) $("#composer input").focus(); }
+function drawMsgs() {
+  const box = $("#msgs");
+  box.innerHTML = S.ai.map((m) => html`<div class="msg ${m.role === "user" ? "user" : "bot"}">${m.content}${m.meta ? html`<span class="meta">${raw(m.meta)}</span>` : ""}</div>`.v).join("");
+  box.scrollTop = box.scrollHeight;
+}
+async function askAI(q) {
+  openAI(true);
+  S.ai.push({ role: "user", content: q }); S.ai.push({ role: "assistant", content: "Thinking…", meta: "" }); drawMsgs();
+  const history = S.ai.slice(0, -2).filter((m) => m.meta !== undefined || m.role === "user").slice(-6).map((m) => ({ role: m.role, content: m.content }));
+  try {
+    const r = await api("POST", "/api/ai/chat", { message: q, history });
+    const tools = r.tool_calls.map((t) => t.tool).join(", ");
+    S.ai[S.ai.length - 1] = { role: "assistant", content: r.answer, meta: html`<span class="ai-tag">${r.label}</span> ${tools ? `used ${tools}` : ""}`.v };
+  } catch (e) {
+    S.ai[S.ai.length - 1] = { role: "assistant", content: e.status === 429 ? e.message : "The assistant couldn't answer: " + e.message, meta: "" };
+  }
+  drawMsgs();
+}
+
+/* ============================================================== shared data helpers */
+let DEPTS = null, DESIGS = null, LTYPES = null;
+async function lookups() {
+  if (role() !== "employee") {
+    [DEPTS, DESIGS] = await Promise.all([api("GET", "/api/departments"), api("GET", "/api/designations")]);
+  }
+  LTYPES = await api("GET", "/api/leave-types");
+}
+const opts = (items, sel, blank) => raw((blank ? `<option value="">${esc(blank)}</option>` : "") + (items || []).map((i) => `<option value="${i.id}" ${String(i.id) === String(sel) ? "selected" : ""}>${esc(i.name)}</option>`).join(""));
+function modal(content, onMount) {
+  const bg = document.createElement("div"); bg.className = "modal-bg";
+  bg.innerHTML = html`<div class="modal" role="dialog" aria-modal="true">${content}</div>`.v;
+  document.body.appendChild(bg);
+  const close = () => bg.remove();
+  bg.addEventListener("click", (e) => { if (e.target === bg || e.target.closest("[data-close]")) close(); });
+  document.addEventListener("keydown", function esc(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); } });
+  onMount?.(bg, close);
+  return close;
+}
+
+/* ============================================================== charts */
+function hbars(rows, { value, label, color, fmt = (v) => v, max }) {
+  if (!rows.length) return html`<div class="empty">No data for this period yet.</div>`;
+  const top = max ?? Math.max(1, ...rows.map((r) => r[value]));
+  return html`<div class="hbars">${rows.map((r) => html`<div class="hbar"><span>${r[label]}</span><div class="track"><div class="fill" style="width:${Math.min(100, (r[value] / top) * 100).toFixed(1)}%;background:${typeof color === "function" ? color(r) : color}"></div></div><span class="num r">${fmt(r[value])}</span></div>`)}</div>`;
+}
+function trendChart(trend) {
+  if (!trend.length) return html`<div class="empty">The trend appears after the first working day with attendance.</div>`;
+  const W = 600, H = 170, pad = 22, n = trend.length, bw = Math.max(4, (W - pad) / n - 4);
+  const bars = trend.map((d, i) => {
+    const h = (d.attendance_rate_pct / 100) * (H - 30); const x = pad + i * ((W - pad) / n);
+    const c = d.attendance_rate_pct >= 90 ? "var(--present)" : d.attendance_rate_pct >= 75 ? "var(--late)" : "var(--absent)";
+    const lbl = n <= 16 || i % Math.ceil(n / 12) === 0 ? `<text x="${x + bw / 2}" y="${H - 4}" text-anchor="middle">${d.date.slice(8)}</text>` : "";
+    return `<rect x="${x}" y="${H - 18 - h}" width="${bw}" height="${Math.max(h, 1)}" rx="3" fill="${c}"><title>${d.date}: ${d.attendance_rate_pct}%</title></rect>${lbl}`;
+  }).join("");
+  const grid = [50, 75, 100].map((p) => { const y = H - 18 - (p / 100) * (H - 30); return `<line x1="${pad}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-dasharray="3 4"/><text x="0" y="${y + 3}">${p}%</text>`; }).join("");
+  return html`<div class="cols"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily attendance rate">${raw(grid + bars)}</svg></div>`;
+}
+const LEGEND = [["present", "Present"], ["late", "Late"], ["partial", "Half day or no check-out"], ["leave", "On leave"], ["absent", "Absent"], ["none", "Not checked in"]];
+const legend = () => html`<div class="legend">${LEGEND.map(([k, label]) => html`<span><i style="${k === "none" ? "border:1.5px dashed var(--off)" : "background:var(--" + k + ")"}"></i>${label}</span>`)}</div>`;
+
+/* ============================================================== dashboard (HR / Admin) */
+const PAGES = {};
+PAGES.dashboard = async (el, filters = {}) => {
+  if (!DEPTS) await lookups();
+  const q = new URLSearchParams(clean(filters)).toString();
+  const isAdmin = role() === "admin";
+  const [hr, admin, board] = await Promise.all([
+    api("GET", "/api/dashboard/hr?" + q), isAdmin ? api("GET", "/api/dashboard/admin?" + q) : null,
+    api("GET", "/api/attendance/board" + (filters.department_id ? "?department_id=" + filters.department_id : "")),
+  ]);
+  const k = hr.kpis, f = hr.filters;
+  const companyBand = isAdmin ? html`<div class="band" style="margin-top:20px">
+      <div style="--tone:var(--absent)"><span class="num">${pct(admin.kpis.attrition_ytd_pct)}</span><span class="lbl">Attrition this year</span><span class="hint">${admin.kpis.exits_ytd} exit(s) since 1 January</span></div>
+      <div style="--tone:var(--brand)"><span class="num">${money(admin.kpis.payroll_cost_gross)}</span><span class="lbl">Payroll cost (gross) in range</span></div>
+      <div style="--tone:var(--ink-2)"><span class="num">${money(admin.kpis.average_salary_gross)}</span><span class="lbl">Average gross salary</span></div></div>` : "";
+  el.innerHTML = html`
+    <form class="filters" id="flt" style="margin-bottom:18px">
+      <label>From<input type="date" name="date_from" value="${f.from}"></label>
+      <label>To<input type="date" name="date_to" value="${f.to}"></label>
+      <label>Department<select name="department_id">${opts(DEPTS, f.department_id, "All departments")}</select></label>
+      <button class="btn">Apply</button><button class="btn primary" type="button" id="summ">Summarize</button>
+    </form>
+    <div id="summary" class="hidden"></div>
+    <div class="band">
+      <div style="--tone:var(--brand)"><span class="num">${k.headcount}</span><span class="lbl">Headcount</span></div>
+      <div style="--tone:var(--present)"><span class="num">${k.present_today}</span><span class="lbl">Present today</span></div>
+      <div style="--tone:var(--leave)"><span class="num">${k.on_leave_today}</span><span class="lbl">On leave today</span></div>
+      <div style="--tone:var(--late)"><span class="num">${k.late_today}</span><span class="lbl">Late today</span></div>
+      <div style="--tone:var(--ink-2)"><span class="num">${k.pending_approvals}</span><span class="lbl">Pending approvals</span></div>
+      <div style="--tone:var(--brand)"><span class="num">${pct(k.attendance_rate_pct)}</span><span class="lbl">Attendance rate</span><span class="hint">for the selected dates</span></div>
+    </div>
+    ${companyBand}
+    <div class="grid3">
+      <section class="panel"><div class="panel-head"><h2>Today at a glance</h2><span class="muted small">${fmtDate(board.date)}${board.is_working_day ? "" : " — not a working day"}</span></div>
+        ${board.rows.length ? html`<div class="mosaic">${board.rows.map((r) => html`<div class="tile" data-s="${r.status}" title="${r.full_name}: ${LABEL[r.status]}${r.check_in ? " at " + r.check_in : ""}" aria-label="${r.full_name}: ${LABEL[r.status]}">${initials(r.full_name)}</div>`)}</div>${legend()}${attention(board)}` : html`<div class="empty">Register employees to see today's attendance here.</div>`}
+      </section>
+      <section class="panel"><div class="panel-head"><h2>Most late arrivals</h2></div>
+        ${hr.top_late_comers.length ? html`<table><tbody>${hr.top_late_comers.map((r, i) => html`<tr><td>${r.name}<div class="tiny muted">${r.department}</div></td><td class="r num">${r.late_count}</td></tr>`)}</tbody></table>` : html`<div class="empty">No late arrivals in this range.</div>`}
+      </section>
+    </div>
+    <div class="grid2">
+      <section class="panel"><div class="panel-head"><h2>Attendance trend</h2><span class="muted small">Daily attendance rate</span></div>${trendChart(hr.attendance_trend)}</section>
+      <section class="panel"><div class="panel-head"><h2>Absenteeism by department</h2></div>${hbars(hr.absenteeism_by_department, { value: "absenteeism_pct", label: "department", color: "var(--absent)", fmt: pct, max: Math.max(10, ...hr.absenteeism_by_department.map((d) => d.absenteeism_pct)) })}</section>
+      <section class="panel"><div class="panel-head"><h2>Leave by type</h2><span class="muted small">Approved working days</span></div>${hbars(hr.leave_by_type, { value: "approved_days", label: "name", color: "var(--leave)" })}</section>
+      ${isAdmin ? html`<section class="panel"><div class="panel-head"><h2>Payroll cost by department</h2></div>${hbars(admin.payroll_cost_by_department, { value: "gross", label: "department", color: "var(--brand)", fmt: money })}</section>`
+                : html`<section class="panel"><div class="panel-head"><h2>Announcements</h2></div>${announcementsList(hr.announcements)}</section>`}
+    </div>
+    ${isAdmin ? html`<div class="grid2">
+      <section class="panel"><div class="panel-head"><h2>Headcount by department</h2></div>${hbars(admin.headcount_by_department, { value: "count", label: "label", color: "var(--ink-2)" })}</section>
+      <section class="panel"><div class="panel-head"><h2>Gender and tenure</h2></div>${hbars(admin.gender, { value: "count", label: "label", color: "var(--ink-2)" })}<div style="height:16px"></div>${hbars(admin.tenure, { value: "count", label: "label", color: "var(--brand)" })}</section>
+      <section class="panel"><div class="panel-head"><h2>Average salary</h2><span class="muted small">Gross, by department and designation</span></div>${admin.average_salary.length ? html`<table><thead><tr><th>Department</th><th>Designation</th><th class="r">Average</th></tr></thead><tbody>${admin.average_salary.map((r) => html`<tr><td>${r.department}</td><td>${r.designation}</td><td class="r num">${money(r.average_gross)}</td></tr>`)}</tbody></table>` : html`<div class="empty">Add salaries to employees to see averages.</div>`}</section>
+      <section class="panel"><div class="panel-head"><h2>Recent activity</h2><a href="#/audit" class="small">Open audit log</a></div>${admin.audit_feed.map((a) => html`<div class="small" style="padding:6px 0;border-bottom:1px solid var(--line-2)"><b>${a.actor_role}</b> ${a.action} ${a.entity.replaceAll("_", " ")} ${a.entity_id ? "#" + a.entity_id : ""}<div class="tiny muted">${fmtDT(a.created_at)}</div></div>`)}</section>
+    </div>` : ""}
+    <section class="panel" style="margin-top:20px" id="watch"><div class="panel-head"><h2>Watch list</h2><span class="muted small">Explainable attrition-risk score and absence patterns over the last 60 days</span></div><div class="empty">Loading…</div></section>`;
+  $("#flt").onsubmit = (ev) => { ev.preventDefault(); PAGES.dashboard(el, formData(ev.target)); };
+  $("#summ").onclick = async (ev) => {
+    const d = formData($("#flt"));
+    const r = await act(ev.target, () => api("POST", "/api/ai/summary", clean({ dashboard: isAdmin ? "admin" : "hr", ...d, department_id: d.department_id ? Number(d.department_id) : null })));
+    const box = $("#summary"); box.className = "notice"; box.style.marginBottom = "18px";
+    box.innerHTML = html`<div style="display:flex;justify-content:space-between;gap:8px"><b>Summary for ${fmtDate(r.filters.from)} – ${fmtDate(r.filters.to)}</b><span class="ai-tag">${r.label}</span></div><ul style="margin:8px 0 0;padding-left:20px">${r.bullets.map((b) => html`<li>${b}</li>`)}</ul>`.v;
+  };
+  loadWatch();
+};
+function attention(board) {
+  const who = (st, withTime) => board.rows.filter((r) => r.status === st).map((r) => r.full_name + (withTime && r.check_in ? ` (${r.check_in})` : r.leave_type ? ` (${r.leave_type})` : ""));
+  const col = (title, names, none) => html`<div><h3>${title}</h3><p>${names.length ? names.join(", ") : none}</p></div>`;
+  return html`<div class="attention">${col("Late today", who("late", true), "Nobody so far")}${col("Not checked in", who("not_checked_in"), "Everyone is in")}${col("On leave", who("on_leave"), "Nobody")}</div>`;
+}
+async function loadWatch() {
+  const box = $("#watch"); if (!box) return;
+  const [risk, anomalies] = await Promise.all([api("GET", "/api/insights/attrition-risk"), api("GET", "/api/insights/absence-anomalies")]);
+  const flagged = risk.filter((r) => r.level !== "low").slice(0, 6);
+  box.querySelector(".empty, .grid2")?.remove();
+  box.insertAdjacentHTML("beforeend", html`<div class="grid2" style="margin-top:0">
+    <div><h3 style="margin-bottom:8px">Attrition risk</h3>${flagged.length ? html`<table><tbody>${flagged.map((r) => html`<tr><td>${r.name}<div class="tiny muted">${r.factors.join("; ")}</div></td><td class="r"><span class="pill" data-s="${r.level === "high" ? "absent" : "late"}">${r.level} ${r.score}</span></td></tr>`)}</tbody></table>` : html`<p class="muted small">Nobody is above the medium-risk threshold.</p>`}</div>
+    <div><h3 style="margin-bottom:8px">Absence anomalies</h3>${anomalies.length ? html`<table><tbody>${anomalies.slice(0, 6).map((a) => html`<tr><td>${a.name}<div class="tiny muted">${a.reasons.join("; ")}</div></td><td class="r num">${a.absent_days}d</td></tr>`)}</tbody></table>` : html`<p class="muted small">No unusual absence patterns.</p>`}</div></div>`.v);
+}
+function announcementsList(items) {
+  return items.length ? html`${items.map((a) => html`<article style="padding:8px 0;border-bottom:1px solid var(--line-2)"><h3>${a.title}</h3><p class="small">${a.body}</p><span class="tiny muted">${a.author}, ${fmtDT(a.created_at)}</span></article>`)}` : html`<div class="empty">No announcements yet.</div>`;
+}
+
+/* ============================================================== employee home / my day */
+PAGES.home = async (el) => {
+  const d = await api("GET", "/api/dashboard/employee");
+  const t = d.today, rec = t.record;
+  let punch;
+  if (!t.is_working_day) punch = html`<button class="punch" disabled>Day off<small>${t.holiday || "Weekend"}</small></button>`;
+  else if (t.on_leave) punch = html`<button class="punch" disabled>On leave<small>${t.on_leave}</small></button>`;
+  else if (t.can_check_in) punch = html`<button class="punch" id="punch" data-a="in">Check in<small>Server time ${t.server_time}</small></button>`;
+  else if (t.can_check_out) punch = html`<button class="punch out" id="punch" data-a="out">Check out<small>In since ${rec.check_in}</small></button>`;
+  else punch = html`<button class="punch" disabled>Done<small>${rec.check_in}–${rec.check_out}</small></button>`;
+  const hoursPct = Math.min(100, (d.hours_this_week / d.weekly_target_hours) * 100);
+  el.innerHTML = html`
+    <div class="grid3" style="margin-top:0">
+      <section class="panel"><div class="clock">${punch}
+        <div style="flex:1;min-width:220px"><h2>${new Date(t.date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</h2>
+          <p style="margin-top:6px">${rec ? html`Today: ${pill(rec.status)} checked in at <b class="num">${rec.check_in}</b>${rec.check_out ? html`, out at <b class="num">${rec.check_out}</b> (${rec.worked_hours} h)` : ""}` : t.is_working_day && !t.on_leave ? "You haven't checked in yet. The server records the time." : ""}</p>
+          <div style="margin-top:16px"><div style="display:flex;justify-content:space-between" class="small"><span>Hours this week</span><span class="num">${d.hours_this_week} / ${d.weekly_target_hours} h</span></div><div class="meter"><div style="width:${hoursPct}%"></div></div></div>
+          <p class="small muted" style="margin-top:8px">Late arrivals this month: <b class="num">${d.late_count_this_month}</b>. Attendance rate: <b class="num">${pct(d.attendance_this_month.attendance_rate_pct)}</b>.</p>
+          <button class="btn sm" id="cam" style="margin-top:12px" ${raw(t.can_check_in ? "" : "disabled")}>Check in with camera</button>
+        </div></div></section>
+      <section class="panel"><div class="panel-head"><h2>Last payslip</h2></div>${d.last_payslip ? html`<p class="num" style="font-size:2rem;font-weight:700">${money(d.last_payslip.net)}</p><p class="muted small">Net pay for ${d.last_payslip.month}</p><button class="btn sm" style="margin-top:10px" id="slip">Download PDF</button>` : html`<p class="muted">Your payslip appears here after Admin finalizes the month.</p>`}</section>
+    </div>
+    <section class="panel" style="margin-top:20px"><div class="panel-head"><h2>Leave balance ${d.leave_balances[0]?.year || ""}</h2><a href="#/leave" class="small">Apply for leave</a></div>
+      <div class="balances">${d.leave_balances.map((b) => html`<div class="bal"><span class="num">${b.remaining ?? "∞"}</span><div class="small">${b.name}</div><div class="tiny muted">${b.quota == null ? "Unlimited" : `${b.used} used of ${b.quota}`}${b.pending ? `, ${b.pending} pending` : ""}</div></div>`)}</div></section>
+    <section class="panel" style="margin-top:20px"><div class="panel-head"><h2>Announcements</h2></div>${announcementsList(d.announcements)}</section>`;
+  const p = $("#punch");
+  if (p) p.onclick = async () => { await act(p, () => api("POST", p.dataset.a === "in" ? "/api/attendance/check-in" : "/api/attendance/check-out"), p.dataset.a === "in" ? "Checked in" : "Checked out"); PAGES.home(el); };
+  const s = $("#slip"); if (s) s.onclick = () => act(s, () => download(`/api/payslips/${d.last_payslip.id}/pdf`, `payslip_${d.last_payslip.month}.pdf`));
+  $("#cam").onclick = () => cameraCheckIn(() => PAGES.home(el));
+};
+
+/* Camera + location check-in (bonus). Face detection runs in the browser; the server checks the geofence. */
+async function cameraCheckIn(done) {
+  modal(html`<h2>Check in with camera</h2><p class="small muted" style="margin:6px 0 12px">We check that exactly one face is in view and that you're inside the office area. Only the result is stored — no photo.</p>
+    <video id="vid" autoplay playsinline muted style="width:100%;border-radius:12px;background:#000;max-height:320px"></video>
+    <p id="camstat" class="small" style="margin:10px 0">Starting camera…</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-close>Cancel</button><button class="btn primary" id="snap" disabled>Check in</button></div>`, async (root, close) => {
+    const stat = $("#camstat", root), video = $("#vid", root), snap = $("#snap", root);
+    let stream;
+    const stop = () => stream?.getTracks().forEach((t) => t.stop());
+    root.addEventListener("click", (e) => { if (e.target === root || e.target.closest("[data-close]")) stop(); });
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      video.srcObject = stream;
+      stat.textContent = "Loading face detector…";
+      await loadFaceApi();
+      stat.textContent = "Ready. Look at the camera and press Check in."; snap.disabled = false;
+    } catch (e) { stat.textContent = "Camera check-in isn't available here (" + e.message + "). Use the regular Check in button."; return; }
+    snap.onclick = async () => {
+      snap.disabled = true; stat.textContent = "Detecting face and location…";
+      try {
+        const faces = await window.faceapi.detectAllFaces(video, new window.faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }));
+        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 12000 }));
+        await api("POST", "/api/attendance/camera-check-in", { face_count: faces.length, lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy_m: pos.coords.accuracy });
+        stop(); close(); toast("Checked in with camera"); done();
+      } catch (e) { stat.textContent = (e.message || "Check-in failed") + " — if this keeps failing, ask HR for an attendance correction."; snap.disabled = false; }
+    };
+  });
+}
+let faceApiPromise;
+function loadFaceApi() {
+  if (window.faceapi) return Promise.resolve();
+  faceApiPromise ??= new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js";
+    s.onload = () => window.faceapi.nets.tinyFaceDetector.loadFromUri("https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/").then(resolve, reject);
+    s.onerror = () => reject(new Error("could not load the face detector"));
+    document.head.appendChild(s);
+  });
+  return faceApiPromise;
+}
+
+/* ============================================================== attendance */
+PAGES.attendance = async (el, tab) => {
+  const staff = role() !== "employee";
+  const tabs = [...(hasProfile() ? [["mine", "My attendance"]] : []), ...(staff ? [["board", "Daily board"], ["corrections", "Corrections"]] : [])];
+  tab = tab || tabs[0][0];
+  el.innerHTML = html`<div class="tabs" role="tablist">${tabs.map(([k, l]) => html`<button class="${k === tab ? "on" : ""}" data-t="${k}" role="tab">${l}</button>`)}</div><div id="tab"></div>`;
+  $$(".tabs button", el).forEach((b) => b.onclick = () => PAGES.attendance(el, b.dataset.t));
+  const box = $("#tab", el);
+  if (tab === "mine") return myAttendance(box);
+  if (tab === "board") return attendanceBoard(box);
+  return correctionsInbox(box);
+};
+async function myAttendance(box, month = monthNow()) {
+  const [cal, corr] = await Promise.all([api("GET", "/api/attendance/calendar?month=" + month), api("GET", "/api/attendance/corrections")]);
+  const first = new Date(cal.days[0].date + "T00:00:00"); const offset = (first.getDay() + 6) % 7;
+  const s = cal.summary;
+  box.innerHTML = html`<section class="panel"><div class="panel-head"><h2>${first.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</h2>
+      <form class="filters" id="mf"><input type="month" name="m" value="${month}" aria-label="Month"><button class="btn sm">Show</button></form></div>
+    <p class="small muted" style="margin-bottom:12px">${["present", "late", "half_day", "missing_checkout", "absent", "on_leave"].filter((k) => s[k]).map((k) => `${s[k]} ${LABEL[k].toLowerCase()}`).join(", ") || "No attendance yet this month."}</p>
+    <div class="cal">${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => html`<div class="dow">${d}</div>`)}${raw("<div></div>".repeat(offset))}
+      ${cal.days.map((d) => html`<div class="day" data-s="${d.status}" title="${LABEL[d.status] || d.status}"><b>${Number(d.date.slice(8))}</b><span>${d.check_in ? `${d.check_in}–${d.check_out || "…"}` : d.holiday || (["absent", "on_leave", "half_day"].includes(d.status) ? LABEL[d.status] : "")}</span></div>`)}</div></section>
+    <div class="grid2">
+      <section class="panel"><h2 style="margin-bottom:12px">Request a correction</h2><form class="form" id="cf">
+        <label>Date<input type="date" name="date" required></label><label>Check-in<input type="time" name="check_in" required></label>
+        <label>Check-out<input type="time" name="check_out"></label><label class="wide">Reason<textarea name="reason" required minlength="5" placeholder="For example: forgot to check in, was at a client site"></textarea></label>
+        <div><button class="btn primary">Send to HR</button></div></form></section>
+      <section class="panel"><h2 style="margin-bottom:12px">My correction requests</h2>${corr.length ? html`<table><tbody>${corr.map((c) => html`<tr><td>${fmtDate(c.date)}<div class="tiny muted">${c.check_in}–${c.check_out || "—"}: ${c.reason}</div></td><td class="r">${pill(c.status)}</td></tr>`)}</tbody></table>` : html`<div class="empty">No correction requests.</div>`}</section></div>`;
+  $("#mf").onsubmit = (ev) => { ev.preventDefault(); myAttendance(box, ev.target.m.value); };
+  $("#cf").onsubmit = async (ev) => { ev.preventDefault(); await act(ev.submitter, () => api("POST", "/api/attendance/corrections", clean(formData(ev.target))), "Correction sent to HR"); myAttendance(box, month); };
+}
+async function attendanceBoard(box, day = "", dept = "") {
+  if (!DEPTS) await lookups();
+  const b = await api("GET", "/api/attendance/board?" + new URLSearchParams(clean({ day, department_id: dept })));
+  box.innerHTML = html`<section class="panel"><div class="panel-head"><h2>${fmtDate(b.date)}</h2>
+      <form class="filters" id="bf"><input type="date" name="day" value="${b.date}" aria-label="Date"><select name="dept" aria-label="Department">${opts(DEPTS, dept, "All departments")}</select><button class="btn sm">Show</button></form></div>
+    <p class="small muted" style="margin-bottom:12px">${Object.entries(b.counts).map(([k, v]) => `${v} ${(LABEL[k] || k).toLowerCase()}`).join(", ") || "Nobody employed on this date."}</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Department</th><th>Status</th><th>In</th><th>Out</th><th>Source</th></tr></thead><tbody>
+    ${b.rows.map((r) => html`<tr><td>${r.full_name}<div class="tiny muted">${r.employee_code}</div></td><td>${r.department}</td><td>${pill(r.status)}${r.leave_type ? html` <span class="tiny muted">${r.leave_type}</span>` : ""}</td><td class="num">${r.check_in || "—"}</td><td class="num">${r.check_out || "—"}</td><td class="small">${r.source || ""}</td></tr>`)}</tbody></table></div></section>`;
+  $("#bf").onsubmit = (ev) => { ev.preventDefault(); attendanceBoard(box, ev.target.day.value, ev.target.dept.value); };
+}
+async function correctionsInbox(box) {
+  const items = await api("GET", "/api/attendance/corrections");
+  const canDecide = role() === "hr";
+  box.innerHTML = html`<section class="panel"><h2 style="margin-bottom:12px">Correction requests</h2>${items.length ? html`<div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Date</th><th>Requested</th><th>Reason</th><th>Status</th><th></th></tr></thead><tbody>
+    ${items.map((c) => html`<tr><td>${c.employee_name}</td><td>${fmtDate(c.date)}</td><td class="num">${c.check_in}–${c.check_out || "—"}</td><td class="small">${c.reason}</td><td>${pill(c.status)}</td>
+      <td class="r">${canDecide && c.status === "pending" && c.employee_id !== S.user.employee_id ? html`<button class="btn sm" data-id="${c.id}" data-ok="1">Approve</button> <button class="btn sm danger" data-id="${c.id}" data-ok="0">Reject</button>` : ""}</td></tr>`)}</tbody></table></div>` : html`<div class="empty">No correction requests yet.</div>`}</section>`;
+  $$("button[data-id]", box).forEach((b) => b.onclick = async () => {
+    const comment = b.dataset.ok === "1" ? "" : prompt("Reason for rejecting (shown to the employee):") ?? null;
+    if (comment === null) return;
+    await act(b, () => api("POST", `/api/attendance/corrections/${b.dataset.id}/decision`, { approve: b.dataset.ok === "1", comment: comment || null }), b.dataset.ok === "1" ? "Correction approved" : "Correction rejected");
+    correctionsInbox(box);
+  });
+}
+
+/* ============================================================== leave */
+PAGES.leave = async (el, tab) => {
+  const tabs = [...(hasProfile() ? [["mine", "My leave"]] : []), ...(role() !== "employee" ? [["inbox", role() === "hr" ? "Approval inbox" : "Pending requests"], ["all", "All requests"]] : [])];
+  tab = tab || tabs[0][0];
+  el.innerHTML = html`<div class="tabs" role="tablist">${tabs.map(([k, l]) => html`<button class="${k === tab ? "on" : ""}" data-t="${k}" role="tab">${l}</button>`)}</div><div id="tab"></div>`;
+  $$(".tabs button", el).forEach((b) => b.onclick = () => PAGES.leave(el, b.dataset.t));
+  const box = $("#tab", el);
+  if (tab === "mine") return myLeave(box);
+  return leaveList(box, tab === "inbox" ? "pending" : "");
+};
+async function myLeave(box) {
+  if (!LTYPES) await lookups();
+  const [bal, list] = await Promise.all([api("GET", "/api/leaves/balance"), api("GET", "/api/leaves")]);
+  box.innerHTML = html`<section class="panel"><div class="panel-head"><h2>Balance ${bal[0]?.year || ""}</h2></div><div class="balances">${bal.map((b) => html`<div class="bal"><span class="num">${b.remaining ?? "∞"}</span><div class="small">${b.name}</div><div class="tiny muted">${b.quota == null ? "Unlimited" : `${b.used} used of ${b.quota}`}${b.pending ? `, ${b.pending} pending` : ""}</div></div>`)}</div></section>
+    <section class="panel"><div class="panel-head"><h2>Apply for leave</h2><span class="ai-tag">Smart leave</span></div>
+      <form class="smart" id="sf"><input name="text" placeholder="Describe it in your words, e.g. Need next Monday and Tuesday off for my sister's wedding" aria-label="Describe your leave" minlength="4" maxlength="500"><button class="btn">Fill the form</button></form>
+      <div id="smartmsg" class="small" style="margin:10px 0"></div>
+      <form class="form" id="lf">
+        <label>Leave type<select name="leave_type" required>${raw(LTYPES.map((t) => `<option value="${esc(t.code)}">${esc(t.name)}</option>`).join(""))}</select></label>
+        <label>From<input type="date" name="start" required></label><label>To<input type="date" name="end" required></label>
+        <label class="wide">Reason<input name="reason" required minlength="3" maxlength="500"></label><input type="hidden" name="source" value="form">
+        <div><button class="btn primary">Apply</button></div></form></section>
+    <section class="panel"><h2 style="margin-bottom:12px">My requests</h2>${leaveTable(list.items, { mine: true })}</section>`;
+  $("#sf").onsubmit = async (ev) => {
+    ev.preventDefault(); const text = ev.target.text.value.trim(); if (text.length < 4) return;
+    const r = await act(ev.submitter, () => api("POST", "/api/ai/smart-leave", { text }));
+    const msg = $("#smartmsg");
+    if (r.fallback || !r.draft) { msg.innerHTML = html`<div class="warn">${r.message}</div>`.v; return; }
+    const f = $("#lf"); f.leave_type.value = r.draft.type; f.start.value = r.draft.start; f.end.value = r.draft.end; f.reason.value = r.draft.reason; f.source.value = "smart";
+    msg.innerHTML = html`<div class="notice"><span class="ai-tag">${r.label}</span> Filled in: ${r.draft.type} leave, ${fmtDate(r.draft.start)} to ${fmtDate(r.draft.end)} — ${r.preview.working_days} working day(s). ${r.message}${r.preview.warnings.length ? html`<div class="warn" style="margin-top:8px">${r.preview.warnings.join(" ")}</div>` : ""}</div>`.v;
+    f.reason.focus();
+  };
+  $("#lf").onsubmit = async (ev) => { ev.preventDefault(); await act(ev.submitter, () => api("POST", "/api/leaves", formData(ev.target)), "Leave request sent to HR"); myLeave(box); };
+  bindLeaveActions(box, () => myLeave(box));
+}
+function leaveTable(items, { mine = false, decide = false } = {}) {
+  if (!items.length) return html`<div class="empty">${mine ? "You haven't applied for leave yet." : "No requests here."}</div>`;
+  return html`<div class="tbl-wrap"><table><thead><tr>${mine ? "" : html`<th>Employee</th>`}<th>Type</th><th>Dates</th><th class="r">Days</th><th>Reason</th><th>Status</th><th></th></tr></thead><tbody>
+    ${items.map((r) => html`<tr>${mine ? "" : html`<td>${r.employee_name}</td>`}<td>${r.leave_type}${r.source === "smart" ? html` <span class="ai-tag">smart</span>` : ""}</td><td class="small">${fmtDate(r.start)} – ${fmtDate(r.end)}</td><td class="r num">${r.days}</td><td class="small">${r.reason}${r.review_comment ? html`<div class="tiny muted">HR: ${r.review_comment}</div>` : ""}</td><td>${pill(r.status)}</td>
+      <td class="r">${mine && (r.status === "pending" || r.status === "approved") ? html`<button class="btn sm" data-cancel="${r.id}">Cancel</button>` : ""}${decide && r.status === "pending" && r.employee_id !== S.user.employee_id ? html`<button class="btn sm" data-dec="${r.id}" data-ok="1">Approve</button> <button class="btn sm danger" data-dec="${r.id}" data-ok="0">Reject</button>` : ""}</td></tr>`)}</tbody></table></div>`;
+}
+function bindLeaveActions(box, reload) {
+  $$("[data-cancel]", box).forEach((b) => b.onclick = async () => { if (!confirm("Cancel this leave request?")) return; await act(b, () => api("POST", `/api/leaves/${b.dataset.cancel}/cancel`), "Leave cancelled"); reload(); });
+  $$("[data-dec]", box).forEach((b) => b.onclick = async () => {
+    const approve = b.dataset.ok === "1";
+    const comment = prompt(approve ? "Comment for the employee (optional):" : "Reason for rejecting:");
+    if (comment === null) return;
+    await act(b, () => api("POST", `/api/leaves/${b.dataset.dec}/decision`, { approve, comment: comment || null }), approve ? "Leave approved" : "Leave rejected");
+    reload(); refreshBadge();
+  });
+}
+async function leaveList(box, status) {
+  const list = await api("GET", "/api/leaves" + (status ? "?status=" + status : ""));
+  box.innerHTML = html`<section class="panel">${leaveTable(list.items, { decide: role() === "hr" })}</section>`;
+  bindLeaveActions(box, () => leaveList(box, status));
+}
+
+/* ============================================================== employees */
+PAGES.employees = async (el, state = { page: 1 }) => {
+  if (!DEPTS) await lookups();
+  const isHR = role() === "hr";
+  const data = await api("GET", "/api/employees?" + new URLSearchParams(clean({ q: state.q, department_id: state.department_id, status: state.status, page: state.page, size: 15 })));
+  const pages = Math.max(1, Math.ceil(data.total / data.size));
+  el.innerHTML = html`<div class="panel"><div class="panel-head">
+      <form class="filters" id="ef"><label>Search<input name="q" value="${state.q || ""}" placeholder="Name, code or email"></label>
+        <label>Department<select name="department_id">${opts(DEPTS, state.department_id, "All")}</select></label>
+        <label>Status<select name="status">${raw(["", "active", "probation", "exited"].map((s) => `<option value="${s}" ${s === (state.status || "") ? "selected" : ""}>${s ? LABEL[s] : "All"}</option>`).join(""))}</select></label>
+        <button class="btn">Search</button></form>
+      ${isHR ? html`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="add">Register employee</button><button class="btn" id="imp">Import from Excel/CSV</button><button class="btn" id="exp">Export CSV</button></div>` : ""}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Code</th><th>Department</th><th>Designation</th><th>Joined</th><th>Status</th></tr></thead><tbody>
+      ${data.items.length ? data.items.map((e) => html`<tr class="click" data-id="${e.id}" tabindex="0"><td>${e.full_name}<div class="tiny muted">${e.email}</div></td><td class="num">${e.employee_code}</td><td>${e.department.name}</td><td>${e.designation?.name || "—"}</td><td class="small">${fmtDate(e.join_date)}</td><td>${pill(e.status)}${e.login?.role === "hr" ? html` <span class="tiny muted">HR</span>` : ""}</td></tr>`) : html`<tr><td colspan="6" class="empty">${isHR ? "No employees match. Register one to get started." : "No employees match."}</td></tr>`}
+    </tbody></table></div>
+    <div class="pager"><span class="small muted">${data.total} employee(s)</span><button class="btn sm" id="prev" ${raw(state.page <= 1 ? "disabled" : "")}>Previous</button><span class="small">Page ${state.page} of ${pages}</span><button class="btn sm" id="next" ${raw(state.page >= pages ? "disabled" : "")}>Next</button></div></div>`;
+  $("#ef").onsubmit = (ev) => { ev.preventDefault(); PAGES.employees(el, { ...formData(ev.target), page: 1 }); };
+  $("#prev").onclick = () => PAGES.employees(el, { ...state, page: state.page - 1 });
+  $("#next").onclick = () => PAGES.employees(el, { ...state, page: state.page + 1 });
+  $$("tr.click", el).forEach((tr) => { tr.onclick = () => employee360(tr.dataset.id, () => PAGES.employees(el, state)); tr.onkeydown = (e) => { if (e.key === "Enter") tr.click(); }; });
+  if (isHR) {
+    $("#add").onclick = () => employeeForm(null, () => PAGES.employees(el, state));
+    $("#exp").onclick = (ev) => act(ev.target, () => download("/api/employees/export.csv", "employees.csv"));
+    $("#imp").onclick = () => csvImport(() => PAGES.employees(el, state));
+  }
+};
+function employeeForm(emp, done, { hrLogin = false } = {}) {
+  const e = emp || {};
+  modal(html`<h2>${emp ? "Edit employee" : hrLogin ? "Create HR login" : "Register employee"}</h2>
+    <p class="small muted" style="margin:6px 0 14px">${emp ? "Changes are recorded in the audit log." : "This creates the person's login with a temporary password they must change on first sign-in."}</p>
+    <form class="form" id="empf">
+      <label>Full name<input name="full_name" required minlength="2" value="${e.full_name || ""}"></label>
+      <label>Email<input name="email" type="email" required value="${e.email || ""}"></label>
+      <label>Department<select name="department_id" required>${opts(DEPTS, e.department?.id, "Choose…")}</select></label>
+      <label>Designation<select name="designation_id">${opts(DESIGS, e.designation?.id, "None")}</select></label>
+      <label>Joining date<input type="date" name="join_date" required value="${e.join_date || ""}"></label>
+      ${emp ? "" : html`<label>Basic salary (PKR)<input type="number" name="basic_salary" min="1" step="1" ${raw(hrLogin ? "" : "required")}></label>`}
+      <label>Gender<select name="gender">${raw(["", "male", "female", "other"].map((g) => `<option value="${g}" ${g === (e.gender || "") ? "selected" : ""}>${g ? g[0].toUpperCase() + g.slice(1) : "Prefer not to say"}</option>`).join(""))}</select></label>
+      <label>Status<select name="status">${raw(["active", "probation"].map((s) => `<option value="${s}" ${s === (e.status || "active") ? "selected" : ""}>${LABEL[s]}</option>`).join(""))}</select></label>
+      <label>Phone<input name="phone" value="${e.phone || ""}"></label>
+      ${emp ? "" : html`<label>Employee code<input name="employee_code" placeholder="Auto"></label>`}
+      <label class="wide">Address<input name="address" value="${e.address || ""}"></label>
+      <div class="wide" style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary">${emp ? "Save changes" : hrLogin ? "Create HR login" : "Register"}</button></div>
+    </form><div id="tmp"></div>`, (root, close) => {
+    $("#empf", root).onsubmit = async (ev) => {
+      ev.preventDefault();
+      const d = clean(formData(ev.target));
+      ["department_id", "designation_id", "basic_salary"].forEach((k) => { if (d[k]) d[k] = Number(d[k]); });
+      const path = emp ? `/api/employees/${emp.id}` : hrLogin ? "/api/users/hr" : "/api/employees";
+      const r = await act(ev.submitter, () => api(emp ? "PATCH" : "POST", path, d), emp ? "Changes saved" : null);
+      if (emp) { close(); return done(); }
+      ev.target.remove();
+      $("#tmp", root).innerHTML = html`<div class="notice"><b>${r.full_name}</b> can now sign in.<dl class="kv" style="margin-top:10px"><dt>Email</dt><dd>${r.email}</dd><dt>Temporary password</dt><dd class="num"><b>${r.temporary_password}</b></dd><dt>Employee code</dt><dd>${r.employee_code}</dd></dl><p class="small" style="margin-top:8px">Share this password privately. It is shown only once and must be changed on first sign-in.</p></div><div style="text-align:right;margin-top:12px"><button class="btn primary" data-close>Done</button></div>`.v;
+      done();
+    };
+  });
+}
+async function employee360(id, reload) {
+  const d = await api("GET", `/api/employees/${id}/360`);
+  const p = d.profile, a = d.attendance_this_month, isHR = role() === "hr";
+  modal(html`<div class="panel-head"><div><h2>${p.full_name}</h2><p class="small muted">${p.employee_code}, ${p.designation?.name || "No designation"}, ${p.department.name}</p></div>${pill(p.status)}</div>
+    <div class="grid2" style="margin-top:0">
+      <dl class="kv"><dt>Email</dt><dd>${p.email}</dd><dt>Phone</dt><dd>${p.phone || "—"}</dd><dt>Address</dt><dd>${p.address || "—"}</dd><dt>Joined</dt><dd>${fmtDate(p.join_date)}</dd>${p.exit_date ? html`<dt>Exited</dt><dd>${fmtDate(p.exit_date)}</dd>` : ""}<dt>Login</dt><dd>${p.login?.role || "—"}${p.login && !p.login.is_active ? " (inactive)" : ""}</dd></dl>
+      <dl class="kv"><dt>Attendance this month</dt><dd class="num">${pct(a.attendance_rate_pct)}</dd><dt>Late arrivals</dt><dd class="num">${a.late_arrivals}</dd><dt>Absent days</dt><dd class="num">${a.absent}</dd>
+        ${d.salary ? html`<dt>Basic salary</dt><dd class="num">${money(d.salary.basic)}</dd><dt>Gross (1.5 × basic)</dt><dd class="num">${money(d.salary.gross)}</dd>` : html`<dt>Salary</dt><dd class="muted">Not set</dd>`}</dl></div>
+    <h3 style="margin:18px 0 8px">Leave balance</h3><p class="small">${d.leave_balances.map((b) => `${b.name}: ${b.remaining ?? "∞"}${b.quota != null ? "/" + b.quota : ""}`).join(", ")}</p>
+    <h3 style="margin:18px 0 8px">Recent leave</h3>${d.recent_leave.length ? html`<table><tbody>${d.recent_leave.map((r) => html`<tr><td>${r.leave_type}</td><td class="small">${fmtDate(r.start)} – ${fmtDate(r.end)}</td><td>${pill(r.status)}</td></tr>`)}</tbody></table>` : html`<p class="small muted">No leave requests.</p>`}
+    <h3 style="margin:18px 0 8px">Payslips</h3>${d.payslips.length ? html`<table><tbody>${d.payslips.map((s) => html`<tr><td>${s.month}</td><td>${pill(s.status)}</td><td class="r num">${money(s.net)}</td></tr>`)}</tbody></table>` : html`<p class="small muted">No payslips yet.</p>`}
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap">
+      ${isHR && p.status !== "exited" ? html`<button class="btn" id="sal">Set salary</button><button class="btn" id="edit">Edit details</button><button class="btn danger" id="exit">Record exit</button>` : ""}<button class="btn primary" data-close>Close</button></div>`, (root, close) => {
+    if (!isHR || p.status === "exited") return;
+    $("#edit", root).onclick = () => { close(); employeeForm(p, reload); };
+    $("#sal", root).onclick = async (ev) => {
+      const basic = prompt("New basic salary in PKR (gross = 1.5 × basic):", d.salary?.basic || "");
+      if (!basic) return;
+      await act(ev.target, () => api("PUT", `/api/employees/${id}/salary`, { basic: Number(basic) }), "Salary updated"); close(); employee360(id, reload);
+    };
+    $("#exit", root).onclick = async (ev) => {
+      const day = prompt("Last working day (YYYY-MM-DD). This deactivates the login.");
+      if (!day) return;
+      await act(ev.target, () => api("POST", `/api/employees/${id}/exit`, { exit_date: day }), "Exit recorded"); close(); reload();
+    };
+  });
+}
+function csvImport(done) {
+  modal(html`<h2>Import employees</h2>
+    <p class="small muted" style="margin:6px 0 10px">Upload an Excel file (.xlsx) or CSV. Required columns: full_name, email, department, join_date, basic_salary. Optional: employee_code, designation, gender, phone, address, status. Dates can be real Excel dates or YYYY-MM-DD. We check every row first; nothing is imported until the file has no errors.</p>
+    <p style="margin-bottom:10px"><button class="btn sm" id="tpl" type="button">Download template</button></p>
+    <details class="bulk" style="margin:0 0 12px"><summary>Valid department and designation names</summary>
+      <p class="small" style="margin-top:8px"><b>Departments:</b> ${(DEPTS || []).map((d) => d.name).join(", ") || "none yet"}</p>
+      <p class="small" style="margin-top:6px"><b>Designations:</b> ${(DESIGS || []).map((d) => d.name).join(", ") || "none yet"}</p>
+      <p class="tiny muted" style="margin-top:6px">Matching ignores capital letters. A name that isn't listed must be added by Admin in Organization (Add many at once).</p></details>
+    <input type="file" id="csvf" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="Employee file (.xlsx or .csv)"><div id="rep" style="margin-top:14px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Close</button><button class="btn" id="dry">Check file</button><button class="btn primary hidden" id="go">Import</button></div>`, (root) => {
+    const send = async (dry) => {
+      const file = $("#csvf", root).files[0]; if (!file) return toast("Choose an Excel or CSV file first", true);
+      const fd = new FormData(); fd.append("file", file);
+      return api("POST", `/api/employees/import?dry_run=${dry}`, fd);
+    };
+    $("#tpl", root).onclick = (ev) => act(ev.target, () => download("/api/employees/import-template.csv", "employee_import_template.csv"));
+    $("#dry", root).onclick = async (ev) => {
+      const r = await act(ev.target, () => send(true));
+      $("#rep", root).innerHTML = html`<p><b>${r.valid_rows}</b> valid row(s), <b>${r.errors.length}</b> problem(s).</p>${r.errors.length ? html`<table style="margin-top:8px"><thead><tr><th>Row</th><th>Field</th><th>Problem</th></tr></thead><tbody>${r.errors.map((e) => html`<tr><td class="num">${e.row}</td><td>${e.field}</td><td>${e.reason}</td></tr>`)}</tbody></table>` : ""}`.v;
+      const go = $("#go", root); go.classList.toggle("hidden", !(r.valid_rows && !r.errors.length)); go.textContent = `Import ${r.valid_rows} employee(s)`;
+    };
+    $("#go", root).onclick = async (ev) => {
+      const r = await act(ev.target, () => send(false), "Employees imported");
+      $("#rep", root).innerHTML = html`<div class="notice">Created ${r.created.length} login(s). Share these temporary passwords privately:</div><table style="margin-top:8px"><tbody>${r.created.map((c) => html`<tr><td>${c.employee_code}</td><td>${c.email}</td><td class="num"><b>${c.temporary_password}</b></td></tr>`)}</tbody></table>`.v;
+      ev.target.classList.add("hidden"); done();
+    };
+  });
+}
+
+/* ============================================================== payroll & payslips */
+PAGES.payroll = async (el, openId) => {
+  const runs = await api("GET", "/api/payroll/runs");
+  const isHR = role() === "hr", isAdmin = role() === "admin";
+  el.innerHTML = html`${isHR ? html`<section class="panel"><div class="panel-head"><h2>Run payroll</h2></div><form class="filters" id="pf"><label>Month<input type="month" name="month" value="${monthNow()}" required></label><button class="btn primary">Create or recalculate draft</button></form>
+      <p class="small muted" style="margin-top:10px">Gross = 1.5 × basic. Per-day rate = gross ÷ working days; absent, unpaid leave and half days (× 0.5) are deducted; joiners and leavers are prorated; tax uses the annual slab. Only Admin can finalize a month.</p></section>` : ""}
+    <section class="panel"><h2 style="margin-bottom:12px">Payroll runs</h2>${runs.length ? html`<table><thead><tr><th>Month</th><th>Status</th><th class="r">Employees</th><th class="r">Gross</th><th class="r">Net</th><th></th></tr></thead><tbody>
+      ${runs.map((r) => html`<tr><td class="num">${r.month}</td><td>${pill(r.status)}</td><td class="r num">${r.totals.employees}</td><td class="r num">${money(r.totals.gross)}</td><td class="r num">${money(r.totals.net)}</td><td class="r"><button class="btn sm" data-open="${r.id}">View</button>${isAdmin && r.status === "draft" ? html` <button class="btn sm primary" data-fin="${r.id}">Finalize</button>` : ""}</td></tr>`)}</tbody></table>` : html`<div class="empty">${isHR ? "No payroll yet. Pick a month above to create the first draft." : "HR hasn't prepared a payroll draft yet."}</div>`}</section>
+    <div id="run"></div>`;
+  if (isHR) $("#pf").onsubmit = async (ev) => {
+    ev.preventDefault();
+    const r = await act(ev.submitter, () => api("POST", "/api/payroll/runs", formData(ev.target)), "Draft ready");
+    if (r.skipped?.length) toast(`${r.skipped.length} employee(s) skipped: no salary structure`, true);
+    PAGES.payroll(el, r.id);
+  };
+  $$("[data-open]", el).forEach((b) => b.onclick = () => showRun(b.dataset.open));
+  $$("[data-fin]", el).forEach((b) => b.onclick = async () => {
+    if (!confirm("Finalize this month? Payslips are released to employees and the month is locked.")) return;
+    await act(b, () => api("POST", `/api/payroll/runs/${b.dataset.fin}/finalize`), "Payroll finalized and locked"); PAGES.payroll(el, b.dataset.fin);
+  });
+  if (openId) showRun(openId);
+};
+async function showRun(id) {
+  const r = await api("GET", "/api/payroll/runs/" + id);
+  $("#run").innerHTML = html`<section class="panel" style="margin-top:20px"><div class="panel-head"><h2>${r.month} ${pill(r.status)}</h2><span class="small muted">${r.working_days} working days</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Employee</th><th class="r">Gross</th><th class="r">Eligible days</th><th class="r">Deduction days</th><th class="r">Deductions</th><th class="r">Tax</th><th class="r">Net</th><th></th></tr></thead><tbody>
+    ${r.payslips.map((p) => html`<tr><td>${p.employee_name}<div class="tiny muted">absent ${p.absent_days}, unpaid ${p.unpaid_leave_days}, half ${p.half_days}${p.late_penalty_days ? `, late penalty ${p.late_penalty_days}` : ""}</div></td><td class="r num">${money(p.prorated_gross)}</td><td class="r num">${p.eligible_days}</td><td class="r num">${p.deduction_days}</td><td class="r num">${money(p.deductions)}</td><td class="r num">${money(p.tax)}</td><td class="r num"><b>${money(p.net)}</b></td><td class="r"><button class="btn sm" data-pdf="${p.id}" data-name="${p.employee_code}">PDF</button></td></tr>`)}
+    <tr><td><b>Total</b></td><td class="r num"><b>${money(r.totals.gross)}</b></td><td></td><td></td><td class="r num">${money(r.totals.deductions)}</td><td class="r num">${money(r.totals.tax)}</td><td class="r num"><b>${money(r.totals.net)}</b></td><td></td></tr></tbody></table></div></section>`.v;
+  $$("[data-pdf]").forEach((b) => b.onclick = () => act(b, () => download(`/api/payslips/${b.dataset.pdf}/pdf`, `payslip_${b.dataset.name}_${r.month}.pdf`)));
+}
+PAGES.payslips = async (el) => {
+  const slips = await api("GET", "/api/payslips" + (hasProfile() && role() === "hr" ? "?employee_id=" + S.user.employee_id : ""));
+  el.innerHTML = html`<section class="panel">${slips.length ? html`<table><thead><tr><th>Month</th><th class="r">Gross</th><th class="r">Deductions</th><th class="r">Tax</th><th class="r">Net</th><th></th></tr></thead><tbody>${slips.map((p) => html`<tr><td class="num">${p.month}</td><td class="r num">${money(p.prorated_gross)}</td><td class="r num">${money(p.deductions)}</td><td class="r num">${money(p.tax)}</td><td class="r num"><b>${money(p.net)}</b></td><td class="r"><button class="btn sm" data-pdf="${p.id}" data-m="${p.month}">Download PDF</button></td></tr>`)}</tbody></table>` : html`<div class="empty">No payslips yet. They appear here after Admin finalizes a month.</div>`}</section>`;
+  $$("[data-pdf]", el).forEach((b) => b.onclick = () => act(b, () => download(`/api/payslips/${b.dataset.pdf}/pdf`, `payslip_${b.dataset.m}.pdf`)));
+};
+
+/* ============================================================== organization (Admin) */
+PAGES.organization = async (el) => {
+  const [s, depts, desigs, types, hols] = await Promise.all([api("GET", "/api/settings"), api("GET", "/api/departments"), api("GET", "/api/designations"), api("GET", "/api/leave-types"), api("GET", "/api/holidays")]);
+  DEPTS = depts; DESIGS = desigs; LTYPES = types;
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const named = (title, items, path) => html`<section class="panel"><h2 style="margin-bottom:12px">${title}</h2>
+    <form class="filters" data-add="${path}"><input name="name" required placeholder="Name" aria-label="${title} name"><button class="btn">Add</button></form>
+    <details class="bulk"><summary>Add many at once</summary><form data-bulk="${path}" data-label="${title.toLowerCase()}">
+      <textarea name="names" placeholder="One per line — paste a column straight from Excel or Google Sheets" aria-label="${title}, one per line"></textarea>
+      <div class="row"><input type="file" accept=".csv,.txt,text/csv,text/plain" aria-label="Load ${title.toLowerCase()} from a file"><span class="small muted" data-count>0 names</span></div>
+      <div><button class="btn primary">Add all</button> <span class="tiny muted">Names that already exist are skipped.</span></div></form></details>
+    <table style="margin-top:10px"><tbody>${items.length ? items.map((i) => html`<tr><td>${i.name}</td><td class="r"><button class="btn sm danger" data-del="${path}/${i.id}">Remove</button></td></tr>`) : html`<tr><td class="muted small">None yet.</td></tr>`}</tbody></table></section>`;
+  el.innerHTML = html`<section class="panel"><div class="panel-head"><h2>Company settings</h2><span class="small muted">Apply to new attendance records only</span></div><form class="form" id="sf">
+      <label>Company name<input name="name" value="${s.name}" required></label><label>Office start<input type="time" name="office_start" value="${s.office_start}" required></label>
+      <label>Grace time (minutes)<input type="number" name="grace_minutes" min="0" max="120" value="${s.grace_minutes}"></label><label>Half day under (hours)<input type="number" name="half_day_hours" step="0.5" min="1" max="12" value="${s.half_day_hours}"></label>
+      <fieldset class="wide" style="border:0;padding:0;margin:0"><legend class="small" style="font-weight:700;color:var(--ink-2);margin-bottom:4px">Weekend</legend><div style="display:flex;gap:14px;flex-wrap:wrap">${days.map((d, i) => html`<label class="check"><input type="checkbox" name="wd${i}" ${raw(s.weekend_days.includes(i) ? "checked" : "")}>${d}</label>`)}</div></fieldset>
+      <label>Office latitude<input type="number" step="any" name="office_lat" value="${s.office_lat ?? ""}"></label><label>Office longitude<input type="number" step="any" name="office_lng" value="${s.office_lng ?? ""}"></label>
+      <label>Camera check-in radius (m)<input type="number" name="office_radius_m" min="10" max="5000" value="${s.office_radius_m}"></label>
+      <label class="check"><input type="checkbox" name="late_penalty_enabled" ${raw(s.late_penalty_enabled ? "checked" : "")}> Late penalty: 3 lates = 0.5 day</label>
+      <div class="wide" style="display:flex;gap:8px"><button class="btn primary">Save settings</button><button type="button" class="btn" id="loc">Use my current location</button></div></form></section>
+    <div class="grid2">${named("Departments", depts, "/api/departments")}${named("Designations", desigs, "/api/designations")}
+      <section class="panel"><h2 style="margin-bottom:12px">Leave types and yearly quotas</h2>
+        <table><thead><tr><th>Type</th><th class="r">Days per year</th><th>Paid</th></tr></thead><tbody>${types.map((t) => html`<tr><td>${t.name}</td><td class="r"><input type="number" min="0" style="width:84px" value="${t.yearly_quota ?? ""}" placeholder="Unlimited" data-quota="${t.id}" aria-label="${t.name} quota"></td><td>${t.is_paid ? "Yes" : "No"}</td></tr>`)}</tbody></table>
+        ${types.length ? "" : html`<button class="btn" id="std" style="margin-top:10px">Add standard leave types</button>`}
+        <form class="form" id="ltf" style="margin-top:14px"><label>Code<input name="code" required placeholder="maternity"></label><label>Name<input name="name" required></label><label>Days per year<input name="yearly_quota" type="number" min="0"></label><label class="check"><input type="checkbox" name="is_paid" checked> Paid</label><div><button class="btn">Add type</button></div></form></section>
+      <section class="panel"><h2 style="margin-bottom:12px">Public holidays</h2><form class="filters" id="hf"><input type="date" name="date" required aria-label="Holiday date"><input name="name" required placeholder="Holiday name" aria-label="Holiday name"><button class="btn">Add</button></form>
+        <table style="margin-top:10px"><tbody>${hols.length ? hols.map((h) => html`<tr><td class="small">${fmtDate(h.date)}</td><td>${h.name}</td><td class="r"><button class="btn sm danger" data-del="/api/holidays/${h.id}">Remove</button></td></tr>`) : html`<tr><td class="muted small">No holidays added.</td></tr>`}</tbody></table></section></div>`;
+  const reload = () => PAGES.organization(el);
+  $("#sf").onsubmit = async (ev) => {
+    ev.preventDefault(); const d = formData(ev.target);
+    const body = { name: d.name, office_start: d.office_start, grace_minutes: Number(d.grace_minutes), half_day_hours: Number(d.half_day_hours), office_radius_m: Number(d.office_radius_m),
+      weekend_days: days.map((_, i) => i).filter((i) => d["wd" + i]), late_penalty_enabled: !!d.late_penalty_enabled,
+      office_lat: d.office_lat === "" ? null : Number(d.office_lat), office_lng: d.office_lng === "" ? null : Number(d.office_lng) };
+    await act(ev.submitter, () => api("PUT", "/api/settings", body), "Settings saved"); reload();
+  };
+  $("#loc").onclick = () => navigator.geolocation?.getCurrentPosition((p) => { $("#sf").office_lat.value = p.coords.latitude.toFixed(6); $("#sf").office_lng.value = p.coords.longitude.toFixed(6); toast("Location filled in — press Save settings"); }, (e) => toast("Couldn't read your location: " + e.message, true));
+  $$("[data-add]", el).forEach((f) => f.onsubmit = async (ev) => { ev.preventDefault(); await act(ev.submitter, () => api("POST", f.dataset.add, formData(f)), "Added"); reload(); });
+  $$("[data-bulk]", el).forEach((f) => {
+    let fromFile = false;
+    const count = () => { const n = parseList(f.names.value, fromFile).length; $("[data-count]", f).textContent = `${n} name${n === 1 ? "" : "s"}`; };
+    f.names.oninput = () => { fromFile = false; count(); };
+    $("input[type=file]", f).onchange = async (ev) => { const file = ev.target.files[0]; if (!file) return; f.names.value = await file.text(); fromFile = /\.csv$/i.test(file.name); count(); };
+    f.onsubmit = async (ev) => {
+      ev.preventDefault();
+      const names = parseList(f.names.value, fromFile);
+      if (!names.length) return toast("Paste at least one name", true);
+      const r = await act(ev.submitter, () => api("POST", `${f.dataset.bulk}/bulk`, { names }));
+      const skipped = r.skipped.length ? ` Skipped ${r.skipped.length}: ${r.skipped.slice(0, 4).map((s) => `${s.name} (${s.reason})`).join(", ")}${r.skipped.length > 4 ? "…" : ""}` : "";
+      toast(`Added ${r.created.length} ${f.dataset.label}.${skipped}`);
+      reload();
+    };
+  });
+  $$("[data-del]", el).forEach((b) => b.onclick = async () => { if (!confirm("Remove this item?")) return; await act(b, () => api("DELETE", b.dataset.del), "Removed"); reload(); });
+  $$("[data-quota]", el).forEach((i) => i.onchange = () => act(i, () => api("PATCH", `/api/leave-types/${i.dataset.quota}`, { yearly_quota: i.value === "" ? null : Number(i.value) }), "Quota updated"));
+  const std = $("#std"); if (std) std.onclick = async () => { await act(std, () => api("POST", "/api/leave-types/standard"), "Standard leave types added"); reload(); };
+  $("#ltf").onsubmit = async (ev) => { ev.preventDefault(); const d = formData(ev.target); await act(ev.submitter, () => api("POST", "/api/leave-types", { code: d.code, name: d.name, yearly_quota: d.yearly_quota === "" ? null : Number(d.yearly_quota), is_paid: !!d.is_paid }), "Leave type added"); reload(); };
+  $("#hf").onsubmit = async (ev) => { ev.preventDefault(); await act(ev.submitter, () => api("POST", "/api/holidays", formData(ev.target)), "Holiday added"); reload(); };
+};
+
+/* ============================================================== logins (Admin) */
+PAGES.users = async (el) => {
+  if (!DEPTS) await lookups();
+  const users = await api("GET", "/api/users");
+  el.innerHTML = html`<section class="panel"><div class="panel-head"><h2>Logins</h2><button class="btn primary" id="addhr">Create HR login</button></div>
+    <p class="small muted" style="margin-bottom:12px">Employee logins are created by HR when they register someone. You can deactivate any login or reset its password.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Role</th><th>Last sign-in</th><th>Status</th><th></th></tr></thead><tbody>
+    ${users.map((u) => html`<tr><td>${u.full_name}<div class="tiny muted">${u.email}</div></td><td>${u.role === "hr" ? "HR" : u.role[0].toUpperCase() + u.role.slice(1)}</td><td class="small">${fmtDT(u.last_login_at)}</td><td>${pill(u.is_active ? "active" : "exited")}${u.must_change_password ? html` <span class="tiny muted">temporary password</span>` : ""}</td>
+      <td class="r">${u.role !== "admin" ? html`<button class="btn sm" data-reset="${u.id}">Reset password</button> <button class="btn sm ${u.is_active ? "danger" : ""}" data-toggle="${u.id}" data-on="${u.is_active ? 1 : 0}">${u.is_active ? "Deactivate" : "Activate"}</button>` : ""}</td></tr>`)}</tbody></table></div></section>`;
+  $("#addhr").onclick = () => employeeForm(null, () => PAGES.users(el), { hrLogin: true });
+  $$("[data-toggle]", el).forEach((b) => b.onclick = async () => { await act(b, () => api("POST", `/api/users/${b.dataset.toggle}/${b.dataset.on === "1" ? "deactivate" : "activate"}`), b.dataset.on === "1" ? "Login deactivated" : "Login activated"); PAGES.users(el); });
+  $$("[data-reset]", el).forEach((b) => b.onclick = async () => {
+    if (!confirm("Reset this password? The person will be signed out and must set a new one.")) return;
+    const r = await act(b, () => api("POST", `/api/users/${b.dataset.reset}/reset-password`));
+    modal(html`<h2>Password reset</h2><dl class="kv" style="margin-top:12px"><dt>Email</dt><dd>${r.email}</dd><dt>Temporary password</dt><dd class="num"><b>${r.temporary_password}</b></dd></dl><p class="small" style="margin-top:10px">Shown once. Share it privately.</p><div style="text-align:right;margin-top:12px"><button class="btn primary" data-close>Done</button></div>`);
+    PAGES.users(el);
+  });
+};
+
+/* ============================================================== announcements, audit, profile */
+PAGES.announcements = async (el) => {
+  const items = await api("GET", "/api/announcements");
+  const canPost = role() !== "employee";
+  el.innerHTML = html`${canPost ? html`<section class="panel"><h2 style="margin-bottom:12px">Post an announcement</h2><form class="form" id="af"><label class="wide">Title<input name="title" required minlength="2" maxlength="200"></label><label class="wide">Message<textarea name="body" required></textarea></label><div><button class="btn primary">Post</button></div></form></section>` : ""}
+    <section class="panel">${announcementsList(items)}</section>`;
+  if (canPost) $("#af").onsubmit = async (ev) => { ev.preventDefault(); await act(ev.submitter, () => api("POST", "/api/announcements", formData(ev.target)), "Announcement posted"); PAGES.announcements(el); };
+};
+PAGES.audit = async (el, state = { page: 1 }) => {
+  const d = await api("GET", "/api/audit?" + new URLSearchParams(clean({ entity: state.entity, action: state.action, page: state.page, size: 25 })));
+  const pages = Math.max(1, Math.ceil(d.total / d.size));
+  el.innerHTML = html`<section class="panel"><div class="panel-head"><form class="filters" id="auf"><label>Entity<input name="entity" value="${state.entity || ""}" placeholder="leave_request"></label><label>Action<select name="action">${raw(["", "create", "update", "approve", "reject", "finalize", "cancel", "deactivate", "reset_password", "delete", "import"].map((a) => `<option ${a === (state.action || "") ? "selected" : ""} value="${a}">${a || "All"}</option>`).join(""))}</select></label><button class="btn">Filter</button></form><span class="small muted">Entries can't be edited or deleted</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Entity</th><th>Before</th><th>After</th></tr></thead><tbody>
+    ${d.items.map((a) => html`<tr><td class="small">${fmtDT(a.created_at)}</td><td>${a.actor_role}${a.actor_user_id ? html`<div class="tiny muted">user #${a.actor_user_id}</div>` : ""}</td><td>${a.action}</td><td>${a.entity}${a.entity_id ? " #" + a.entity_id : ""}</td>
+      <td>${a.before ? html`<details><summary class="small">View</summary><pre class="json">${JSON.stringify(a.before, null, 1)}</pre></details>` : "—"}</td><td>${a.after ? html`<details><summary class="small">View</summary><pre class="json">${JSON.stringify(a.after, null, 1)}</pre></details>` : "—"}</td></tr>`)}</tbody></table></div>
+    <div class="pager"><span class="small muted">${d.total} entries</span><button class="btn sm" id="prev" ${raw(state.page <= 1 ? "disabled" : "")}>Previous</button><span class="small">Page ${state.page} of ${pages}</span><button class="btn sm" id="next" ${raw(state.page >= pages ? "disabled" : "")}>Next</button></div></section>`;
+  $("#auf").onsubmit = (ev) => { ev.preventDefault(); PAGES.audit(el, { ...formData(ev.target), page: 1 }); };
+  $("#prev").onclick = () => PAGES.audit(el, { ...state, page: state.page - 1 });
+  $("#next").onclick = () => PAGES.audit(el, { ...state, page: state.page + 1 });
+};
+PAGES.profile = async (el) => {
+  const p = await api("GET", "/api/me/profile");
+  el.innerHTML = html`<div class="grid2" style="margin-top:0"><section class="panel"><h2 style="margin-bottom:12px">${p.full_name || S.user.full_name}</h2>
+      ${p.employee_code ? html`<dl class="kv"><dt>Code</dt><dd>${p.employee_code}</dd><dt>Email</dt><dd>${p.email}</dd><dt>Department</dt><dd>${p.department.name}</dd><dt>Designation</dt><dd>${p.designation?.name || "—"}</dd><dt>Joined</dt><dd>${fmtDate(p.join_date)}</dd></dl>
+      <form class="form" id="pf" style="margin-top:16px"><label>Phone<input name="phone" value="${p.phone || ""}" maxlength="40"></label><label class="wide">Address<input name="address" value="${p.address || ""}" maxlength="300"></label><div><button class="btn primary">Save contact details</button></div></form>
+      <p class="tiny muted" style="margin-top:8px">Other details are managed by HR.</p>` : html`<p class="muted">Admin accounts don't have an employee profile.</p>`}</section>
+    <section class="panel"><h2 style="margin-bottom:12px">Security</h2><p class="small muted" style="margin-bottom:12px">Changing your password signs out your other sessions. If you signed in on a shared computer, sign out everywhere.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="#/password">Change password</a><button class="btn danger" id="outall" type="button">Sign out everywhere</button></div></section></div>`;
+  $("#outall").onclick = async () => { if (confirm("Sign out of HCM Lite on every device?")) await logout(false, { everywhere: true }); };
+  const f = $("#pf"); if (f) f.onsubmit = async (ev) => { ev.preventDefault(); await act(ev.submitter, () => api("PATCH", "/api/me/profile", formData(ev.target)), "Contact details saved"); };
+};
+
+render();
+</script>
+</body>
+</html>
